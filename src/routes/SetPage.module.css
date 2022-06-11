@@ -1,0 +1,65 @@
+.container {
+	background-color: black;
+	padding: 8px;
+	border-radius: 8px;
+	width: min-content;
+}
+
+.player {
+	width: 40px;
+	height: 40px;
+	padding: 4px;
+	background-color: var(--background-dark-gray);
+	border-radius: 8px;
+	margin: 4px;
+}
+
+.equipmentRow {
+	display: flex;
+	align-items: center;
+	flex-direction: row;
+	padding: 4px;
+}
+
+.statsRow {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: row;
+	padding: 4px;
+}
+
+.statInput {
+	width: 52px;
+	background-color: var(--background-dark-gray);
+	border: 1px solid;
+	color: white;
+	padding: 2px;
+	appearance: textfield;
+	text-align: center;
+	margin: 2px;
+	border-radius: 4px;
+}
+
+.statusEffectRow {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-content: flex-start;
+}
+
+.statusEffectRow > div {
+	cursor: pointer;
+	transition: filter 0.1s linear;
+}
+
+.statusEffectRow > div:hover {
+	filter: drop-shadow(0 0 1px white);
+}
+
+.disabled {
+	filter: brightness(0.2)
+}
+

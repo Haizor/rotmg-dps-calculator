@@ -1,0 +1,17 @@
+.setsDisplay {
+	display: flex;
+	flex-direction: column;
+}
+
+.setDisplay {
+	display: flex;
+	flex-direction: column;
+	padding: 4px;
+}
+
+.row {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}

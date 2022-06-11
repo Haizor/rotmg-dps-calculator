@@ -1,0 +1,8 @@
+.slot {
+	background-color: var(--background-dark-gray);
+	border-radius: 8px;
+	width: 40px;
+	height: 40px;
+	margin: 4px;
+	padding: 4px;
+}
