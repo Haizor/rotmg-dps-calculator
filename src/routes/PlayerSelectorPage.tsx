@@ -16,7 +16,7 @@ function PlayerSelectorPage() {
 	const dispatch = useAppDispatch();
 
 	const players = Manager.getAll<Player>(AssetTypes.Players).map((player) => (
-		<div key={player.type} onClick={e => {dispatch(setPlayer([index, player.type])); navigate(-1)}}>
+		<div key={player.type} className={"highlightHover"} onClick={e => {dispatch(setPlayer([index, player.type])); navigate(-1)}}>
 			<SpriteComponent texture={player.texture} />
 		</div>
 	));

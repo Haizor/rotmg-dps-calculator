@@ -55,7 +55,7 @@ function StatField({stat}: {stat: keyof(BasicStats)}) {
 	const dispatch = useAppDispatch();
 	const stats = useAppSelector((state) => state.sets[index].stats);
 
-	return <input style={{borderColor: `var(--${stat})`}} className={styles.statInput} type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: e.target.value}]))}/>
+	return <input style={{borderColor: `var(--${stat})`}} className={styles.statInput} type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: parseInt(e.target.value)}]))}/>
 }
 
 function Stats() {
@@ -93,14 +93,14 @@ export function SetPage() {
 	return <Modal>
 		<div className={styles.container} onClick={e => e.stopPropagation()}>
 			<div className={styles.equipmentRow}>
-				<div className={styles.player}>
+				<div className={styles.player + " highlightHover"}>
 					<Link to="player">
 						<SpriteComponent texture={player?.texture} size={32}></SpriteComponent>
 					</Link>
 				</div>
 
 
-				{equipment.map(((equipment, equipIndex) => <EquipmentSlot setIndex={index} equipIndex={equipIndex} key={equipIndex}/>))}
+				{equipment.map(((equipment, equipIndex) => <EquipmentSlot className={"highlightHover"} setIndex={index} equipIndex={equipIndex} key={equipIndex}/>))}
 				<ColorPicker color={set.color} onChange={(color) => dispatch(setColor([index, color]))}/>
 			</div>
 			<StatusEffectToggle />

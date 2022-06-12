@@ -29,7 +29,7 @@ function SetDisplay({set, index}: {set: PlayerState, index: number}) {
 	}
 
 	return (
-		<div className={styles.setDisplay} style={{border: "2px solid " + set.color}} onClick={() => navigate(`/set/${index}`)}>
+		<div className={styles.setDisplay + " highlightHover"} style={{border: "2px solid " + set.color}} onClick={() => navigate(`/set/${index}`)}>
 			<div className={styles.row}>
 				<SpriteComponent texture={player?.texture} size={32}></SpriteComponent>
 				{equipment.map(((equipment, equipIndex) => <SpriteComponent texture={equipment?.texture} size={32} key={equipIndex}/>))}

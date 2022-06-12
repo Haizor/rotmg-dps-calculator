@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Equipment } from "rotmg-utils";
+import { Equipment, Item } from "rotmg-utils";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { AssetTypes, Manager } from "../asset";
 import { Modal } from "../components/Modal";
 import SpriteComponent from "../components/SpriteComponent";
+import TooltipProvider from "../components/tooltip/TooltipProvider";
 import { getPlayerFromState, setEquipment } from "../features/player/setsSlice";
 
 import styles from "./SelectorPage.module.css";
@@ -28,11 +29,17 @@ function EquipSelectorPage() {
 		return null;
 	}
 
-	const equips = Manager.getAll<Equipment>(AssetTypes.Equipment).filter((eq => eq.slotType === player.slotTypes[equipIndex])).map((eq) => 
-		<div key={eq.id} onClick={() => {dispatch(setEquipment([index, equipIndex, { id: eq.id }])); navigate(-1)}}>
-			<SpriteComponent texture={eq.texture} />
+	const equips = [(
+		<div className={styles.remove + " highlightHover"} onClick={() => {dispatch(setEquipment([index, equipIndex, undefined])); navigate(-1)}}>
+			❌
 		</div>
-	);
+	), ...Manager.getAll<Equipment>(AssetTypes.Equipment).filter((eq => eq.slotType === player.slotTypes[equipIndex])).map((eq) => 
+		<div key={eq.id} className={"highlightHover"} onClick={() => {dispatch(setEquipment([index, equipIndex, { id: eq.id }])); navigate(-1)}}>
+			<TooltipProvider item={new Item(eq)}>
+				<SpriteComponent texture={eq.texture} />
+			</TooltipProvider>
+		</div>
+	)];
 
 	return <Modal>
 		<div className={styles.container} onClick={e => e.stopPropagation()}>
