@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@react-spring/web": "^9.4.5",
     "@reduxjs/toolkit": "^1.8.2",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@types/lodash": "^4.14.182",
     "@types/object-hash": "^2.2.1",
-    "@types/react-color": "^3.0.6"
+    "@types/react-color": "^3.0.6",
+    "@types/react-transition-group": "^4.4.4"
   }
 }

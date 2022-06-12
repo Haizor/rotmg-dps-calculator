@@ -10,6 +10,7 @@ import styles from "./App.module.css";
 import SetsDisplay from "./components/SetsDisplay";
 import { Outlet } from "react-router-dom";
 import "./App.css"
+import { TopBar } from "./components/TopBar";
 
 const graphs = [
 	<DefenseGraph />
@@ -32,9 +33,13 @@ function App() {
 
 	return (
 		<div className={styles.app}>
-			{graphs[graphIndex]}
-			<SetsDisplay />
-			<Outlet />
+			<TopBar />
+			<div className={styles.main}>
+				{graphs[graphIndex]}
+				<SetsDisplay />
+				<Outlet />
+			</div>
+
 		</div>
 	);
 }
