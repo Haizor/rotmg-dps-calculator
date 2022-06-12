@@ -81,6 +81,10 @@ function updateData(sets: PlayerState[], data: Data) {
 
 		data.datasets[index].borderColor = state.color;
 	})
+
+	if (data.datasets.length > sets.length) {
+		data.datasets.splice(sets.length);
+	}
 }
 
 function getDataFromSets(sets: PlayerState[]): Data {
@@ -123,7 +127,7 @@ function DefenseGraph() {
 
 	return (
 		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px"}}>
-			<Line datasetIdKey="hash" ref={chart} data={data.current} options={options} redraw={true}/>
+			<Line datasetIdKey="id" ref={chart} data={data.current} options={options} redraw={true}/>
 		</div>
 
 	)
