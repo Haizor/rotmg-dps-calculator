@@ -1,4 +1,4 @@
-import { Activate, BulletCreate, Equipment, Proc, Projectile, Stats, StatusEffectType } from "rotmg-utils";
+import { Activate, BulletCreate, Equipment, Proc, Projectile, StatBoostSelf, Stats, StatusEffectType } from "rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, PlayerState } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -7,10 +7,16 @@ type StatsMap = {
 	[key: string]: Stats
 }
 
-function getStats(base: Stats, map: StatsMap) {
+type ProcCooldowns = {
+	[key: string]: number;
+}
+
+type ProcNames = "onShootProcs" | "abilityProcs" | "onHitProcs"
+
+function getStats( map: StatsMap) {
 	return Object.values(map).reduce((prev, curr) => {
 		return prev.add(curr);
-	}, base)
+	}, new Stats())
 }
 
 function getAverageDamage(statusEffects: StatusEffectType[], projectile: Projectile, stats: Stats, def: number) {
@@ -48,6 +54,27 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 	}
 }
 
+function processProcs(key: ProcNames, cooldowns: ProcCooldowns, equipment: (Equipment | undefined)[], options: DPSProviderOptions) {
+	for (let equipIndex in equipment) {
+		const equip = equipment[equipIndex];
+		if (equip === undefined) continue;
+		for (let procIndex in equip[key]) {
+
+			const proc = equip[key][procIndex] as (Proc & Activate);
+
+			const cooldown = cooldowns[`${equipIndex},${procIndex}`];
+
+			if ((cooldown !== undefined && cooldown > 0)) continue;
+
+			const providerConstructor = ActivateProviders[proc.getName()];
+			if (providerConstructor === undefined) continue;
+			
+			options.addProvider(new providerConstructor(equip, proc));
+			cooldowns[`${equipIndex},${procIndex}`] = proc.cooldown
+		}
+	}
+}
+
 export default class DPSCalculator {
 	state: PlayerState;
 	simulationTime: number = 20;
@@ -60,6 +87,12 @@ export default class DPSCalculator {
 
 	constructor(state: PlayerState) {
 		this.state = state;
+		this.stats.base = getEquipmentFromState(state).reduce(((prev, curr) => {
+			if (curr === undefined) {
+				return prev;
+			}
+			return prev.add(curr.stats)
+		}), basicToFullStats(this.state.stats));
 	}
 
 	getDPS() {
@@ -76,7 +109,8 @@ export default class DPSCalculator {
 
 	getProviders(): DPSProvider[] {
 		return [
-			new WeaponDPSProvider(this.state)
+			new WeaponDPSProvider(this.state),
+			new AbilityDPSProvider(this.state)
 		]
 	}
 
@@ -130,7 +164,6 @@ type DPSProviderOptions = {
 class WeaponDPSProvider implements DPSProvider {
 	state: PlayerState;
 	dps: number = 0;
-	baseStats: Stats;
 	equipment: (Equipment | undefined)[];
 	attackCountBuffer: number = 0;
 	attackCount: number = 0;
@@ -142,18 +175,12 @@ class WeaponDPSProvider implements DPSProvider {
 	constructor(state: PlayerState) {
 		this.state = state;
 		this.equipment = getEquipmentFromState(state);
-		this.baseStats = this.equipment.reduce(((prev, curr) => {
-			if (curr === undefined) {
-				return prev;
-			}
-			return prev.add(curr.stats)
-		}), basicToFullStats(this.state.stats));
 	}
 
 	simulate(options: DPSProviderOptions): boolean {
 		const { elapsed, def, statsMap } = options;
 		const weapon = this.equipment[0];
-		const stats = getStats(this.baseStats, statsMap);
+		const stats = getStats(statsMap);
 		const attacksPerSecond = hasStatusEffect(this.state.statusEffects, StatusEffectType.Dazed) ? 1.5 : stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1);
 		this.attackCountBuffer += elapsed * attacksPerSecond;
 		if (weapon === undefined || !(weapon.hasProjectiles())) return false;
@@ -161,7 +188,7 @@ class WeaponDPSProvider implements DPSProvider {
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
 		while (this.attackCountBuffer >= 1) {
-			this.processProcs(options);
+			processProcs("onShootProcs", this.procCooldowns, this.equipment, options);
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
@@ -174,27 +201,30 @@ class WeaponDPSProvider implements DPSProvider {
 		return true;
 	}
 
-	processProcs(options: DPSProviderOptions) {
-		for (let equipIndex in this.equipment) {
-			const equip = this.equipment[equipIndex];
-			if (equip === undefined) continue;
-			for (let procIndex in equip.onShootProcs) {
-				const proc = equip.onShootProcs[procIndex] as (Proc & Activate);
-				const cooldown = this.procCooldowns[`${equipIndex},${procIndex}`];
+	getResult(): number {
+		return this.dps;
+	}
+}
 
-				if ((cooldown !== undefined && cooldown > 0)) continue;
+class AbilityDPSProvider implements DPSProvider {
+	mana: number = 0;
+	state: PlayerState;
+	equipment: (Equipment | undefined)[];
+	procCooldowns: ProcCooldowns = {};
 
-				const providerConstructor = ActivateProviders[proc.getName()];
-				if (providerConstructor === undefined) continue;
-				
-				options.addProvider(new providerConstructor(equip, proc));
-				this.procCooldowns[`${equipIndex},${procIndex}`] = proc.cooldown
-			}
-		}
+	constructor(state: PlayerState) {
+		this.state = state;
+		this.equipment = getEquipmentFromState(state);
+	}
+
+	simulate(data: DPSProviderOptions): boolean {
+		processProcs("abilityProcs", this.procCooldowns, this.equipment, data);
+
+		return true;
 	}
 
 	getResult(): number {
-		return this.dps;
+		return 0;
 	}
 }
 
@@ -227,9 +257,49 @@ class BulletCreateProvider implements DPSProvider {
 	getResult(): number {
 		return this.dps;
 	}
+}
 
+class StatBoostProvider implements DPSProvider {
+	duration: number = 0;
+	totalDuration: number = 0;
+	equip: Equipment;
+	proc: StatBoostSelf;
+	constructor(equip: Equipment, proc: StatBoostSelf) {
+		this.equip = equip;
+		this.proc = proc;
+	}
+
+	simulate(data: DPSProviderOptions): boolean {
+		const { elapsed, statsMap } = data;
+
+		const baseStats = getStats(statsMap);
+
+		if (this.duration === 0) {
+			const stats = new Stats();
+			stats[Stats.convertStatName(this.proc.stat)] = this.proc.getAmount(baseStats.wis);
+			statsMap[this.getStatKey()] = stats;
+			this.totalDuration = this.proc.getDuration(baseStats.wis)
+		}
+		this.duration += elapsed;
+
+		if (this.duration > this.totalDuration) {
+			delete statsMap[this.getStatKey()];
+			return false;
+		}
+
+		return true;
+	}
+
+	getStatKey(): string {
+		return this.equip.type + "";
+	}
+
+	getResult(): number {
+		return 0;
+	}
 }
 
 const ActivateProviders: {[key: string]: new (equip: Equipment, proc: any) => DPSProvider} = {
-	"BulletCreate": BulletCreateProvider
+	"BulletCreate": BulletCreateProvider,
+	"StatBoostSelf": StatBoostProvider
 }
