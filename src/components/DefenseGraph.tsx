@@ -18,11 +18,19 @@ const options: ChartOptions<"line"> = {
 	maintainAspectRatio: false,
 	scales: {
 		xAxes: {
+			title: {
+				display: true,
+				text: "DEF"
+			},
 			grid: {
 				display: false
 			}
 		},
 		yAxes: {
+			title: {
+				display: true,
+				text: "DPS"
+			},
 			grid: {
 				color: gridColor,
 				tickColor: gridColor,
@@ -110,7 +118,7 @@ function DefenseGraph() {
 	}, [sets])
 
 	return (
-		<div style={{flex: "1 0 0", minWidth: "0"}}>
+		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px"}}>
 			<Line datasetIdKey="id" ref={chart} data={data.current} options={options} redraw={true}/>
 		</div>
 

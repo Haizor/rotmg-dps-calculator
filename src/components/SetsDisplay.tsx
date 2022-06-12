@@ -11,9 +11,9 @@ function SetsDisplay() {
 
 	return <div className={styles.setsDisplay}>
 		{sets.map((set, index) => <SetDisplay key={index} set={set} index={index} />)}
-		<button onClick={() => {
+		<button className={styles.button} onClick={() => {
 			dispatch(addSet())
-		}}>Test</button>
+		}}>+</button>
 	</div>
 }
 
@@ -33,7 +33,7 @@ function SetDisplay({set, index}: {set: PlayerState, index: number}) {
 			<div className={styles.row}>
 				<SpriteComponent texture={player?.texture} size={32}></SpriteComponent>
 				{equipment.map(((equipment, equipIndex) => <SpriteComponent texture={equipment?.texture} size={32} key={equipIndex}/>))}
-				<button onClick={remove}>X</button>
+				<button className={styles.button} onClick={remove}>X</button>
 			</div>
 			<StatusEffectsDisplay set={set}/>
 		</div>
