@@ -6,9 +6,14 @@ import { PlayerState } from "../features/player/setsSlice";
 import DPSCalculator from "../dps/dps-calculator";
 import { useAppSelector } from "../app/hooks";
 import { useRef,  useEffect } from "react";
+import objectHash from "object-hash";
 Chart.register(...registerables);
 
 type Data = ChartData<"line", number[]>
+
+const hashOptions: objectHash.BaseOptions = {
+	excludeKeys: (key) => key === "color"
+}
 
 const gridColor = "#666666"
 const defenseRange = 100;
@@ -58,20 +63,22 @@ function getInitialData(sets: PlayerState[]): Data {
 		labels
 	}
 
-	updateData(sets, data);
-
-	console.log(data);
-
 	return data;
 }
 
 function updateData(sets: PlayerState[], data: Data) {
 	sets.forEach((state, index) => {
-		const dps = new DPSCalculator(state);
 		if (data.datasets[index] === undefined) {
-			data.datasets[index] = {data: [], label: state.id + "", borderColor: state.color };
+			data.datasets[index] = {data: [], label: state.id + "", borderColor: state.color } as any;
 		}
-		data.datasets[index].data = dps.getDPS();
+		const hash = objectHash(state, hashOptions);
+		if (hash !== (data.datasets[index] as any).hash) {
+			console.log(index)
+			const dps = new DPSCalculator(state);
+			data.datasets[index].data = dps.getDPS();
+			(data.datasets[index] as any).hash = hash;
+		}
+
 		data.datasets[index].borderColor = state.color;
 	})
 }
@@ -107,11 +114,8 @@ function DefenseGraph() {
 	const data = useRef<Data>(getInitialData(sets));
 
 	useEffect(() => {
-
 		updateData(sets, data.current);
 		if (chart.current !== null) {
-			// console.log(data.current)
-
 			chart.current.data = data.current;
 			chart.current.update();
 		}
@@ -119,7 +123,7 @@ function DefenseGraph() {
 
 	return (
 		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px"}}>
-			<Line datasetIdKey="id" ref={chart} data={data.current} options={options} redraw={true}/>
+			<Line datasetIdKey="hash" ref={chart} data={data.current} options={options} redraw={true}/>
 		</div>
 
 	)
