@@ -4,12 +4,15 @@ import { AssetTypes, getEquipment, Manager } from '../../asset';
 import { BasicStats, fullToBasicStats } from '../../util';
 import * as _ from "lodash";
 
+let idCount = 0;
+
 export interface PlayerState {
 	equipment: [PossibleItem, PossibleItem, PossibleItem, PossibleItem];
 	player: number;
 	stats: BasicStats;
 	color: string;
 	statusEffects: StatusEffectType[];
+	id: number;
 }
 
 export interface Item {
@@ -31,7 +34,8 @@ function getInitialState(): PlayerState[] {
 			equipment: [undefined, undefined, undefined, undefined],
 			stats: fullToBasicStats(new Stats()),
 			color: "#FFF",
-			statusEffects: []
+			statusEffects: [],
+			id: idCount++
 		}
 	]
 
@@ -42,7 +46,8 @@ function getInitialState(): PlayerState[] {
 		equipment: [undefined, undefined, undefined, undefined],
 		stats: fullToBasicStats(player.maxStats),
 		color: "#FFF",
-		statusEffects: []
+		statusEffects: [],
+		id: idCount++
 	}
 
 	for (let i = 0; i < 4; i++) {
@@ -68,6 +73,7 @@ const playerSlice = createSlice({
 		addSet: (state: PlayerState[], action: PayloadAction<PlayerState | undefined>) => {
 			if (action.payload === undefined) {
 				const set = state.length > 0 ? _.cloneDeep(state[state.length  - 1]) : getInitialState()[0];
+				set.id = idCount++;
 				state.push(set);
 				return;
 			}
