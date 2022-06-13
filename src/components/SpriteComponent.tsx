@@ -35,12 +35,12 @@ export default class SpriteComponent extends React.Component<Props, {}> {
 
 		if (sprite !== undefined) {
 			const data = sprite.getData();
-	
+			const spriteSize = Math.max(sprite.getData().position.w, sprite.getData().position.h);
 
-			const ratio = size / 8;
+			const ratio = size / spriteSize;
 		
-			style.width = 8 + "px";
-			style.height = 8 + "px";
+			style.width = spriteSize + "px";
+			style.height = spriteSize + "px";
 			style.backgroundImage = `url("${sprite.getAtlasSource()}")`;
 			style.backgroundPosition = `-${Math.floor(data.position.x)}px -${Math.floor(data.position.y)}px`
 			style.transform = `scale(${ratio * 100}%)`

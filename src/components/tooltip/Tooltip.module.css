@@ -68,6 +68,8 @@
 }
 
 .smallDarkText {
+	display: flex;
+	flex-direction: row;
 	color: #7B7C7D;
 	font-size: 30px;
 }

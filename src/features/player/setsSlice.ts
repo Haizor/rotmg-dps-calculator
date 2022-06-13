@@ -12,6 +12,7 @@ export interface PlayerState {
 	stats: BasicStats;
 	color: string;
 	statusEffects: StatusEffectType[];
+	petMagicHeal: number;
 	id: number;
 }
 
@@ -35,11 +36,10 @@ function getInitialState(): PlayerState[] {
 			stats: fullToBasicStats(new Stats()),
 			color: "#FFF",
 			statusEffects: [],
-			id: idCount++
+			id: idCount++,
+			petMagicHeal: 70
 		}
 	]
-
-	console.log(player)
 
 	const state: PlayerState = {
 		player: player.type,
@@ -47,7 +47,8 @@ function getInitialState(): PlayerState[] {
 		stats: fullToBasicStats(player.maxStats),
 		color: "#FFF",
 		statusEffects: [],
-		id: idCount++
+		id: idCount++,
+		petMagicHeal: 70
 	}
 
 	for (let i = 0; i < 4; i++) {
@@ -130,6 +131,9 @@ const playerSlice = createSlice({
 		setStats: (state: PlayerState[], action: PayloadAction<Indexed<BasicStats>>) => {
 			state[action.payload[0]].stats = action.payload[1];
 		},
+		setPetMagicHeal: (state: PlayerState[], action: PayloadAction<Indexed<number>>) => {
+			state[action.payload[0]].petMagicHeal = action.payload[1];
+		},
 		enableStatusEffect: (state: PlayerState[], action: PayloadAction<Indexed<StatusEffectType>>) => {
 			const set = state[action.payload[0]];
 			if (!set.statusEffects.includes(action.payload[1]))
@@ -159,5 +163,19 @@ export function hasStatusEffect(statusEffects: StatusEffectType[], type: StatusE
 	return statusEffects.includes(type);
 }
 
-export const { addSet, setPlayer, setEquipment, setWeapon, setAbility, setArmor, setRing, setStats, removeSet, setColor, enableStatusEffect, disableStatusEffect } = playerSlice.actions;
+export const { 
+	addSet, 
+	setPlayer, 
+	setEquipment, 
+	setWeapon, 
+	setAbility, 
+	setArmor, 
+	setRing, 
+	setStats, 
+	removeSet, 
+	setColor, 
+	setPetMagicHeal, 
+	enableStatusEffect, 
+	disableStatusEffect 
+} = playerSlice.actions;
 export default playerSlice.reducer;

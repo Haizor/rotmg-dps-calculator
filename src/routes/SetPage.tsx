@@ -5,7 +5,7 @@ import { ColorPicker } from "../components/ColorPicker";
 import { EquipmentSlot } from "../components/EquipmentSlot";
 import { Modal } from "../components/Modal";
 import SpriteComponent from "../components/SpriteComponent";
-import { disableStatusEffect, enableStatusEffect, getEquipmentFromState, getPlayerFromState, setColor, setStats } from "../features/player/setsSlice";
+import { disableStatusEffect, enableStatusEffect, getEquipmentFromState, getPlayerFromState, setColor, setPetMagicHeal, setStats } from "../features/player/setsSlice";
 import { BasicStats, getTextureForEffect } from "../util";
 
 import styles from "./SetPage.module.css";
@@ -55,7 +55,21 @@ function StatField({stat}: {stat: keyof(BasicStats)}) {
 	const dispatch = useAppDispatch();
 	const stats = useAppSelector((state) => state.sets[index].stats);
 
-	return <input style={{borderColor: `var(--${stat})`}} className={styles.statInput} type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: parseInt(e.target.value)}]))}/>
+	return <input style={{borderColor: `var(--${stat})`}} className={styles.numberInput} type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: parseInt(e.target.value)}]))}/>
+}
+
+function PetMagicHeal() {
+	const params = useParams();
+	const index = parseInt(params.index ?? "-1");
+	const dispatch = useAppDispatch();
+	const petMagicHeal = useAppSelector((state) => state.sets[index].petMagicHeal);
+
+	return (
+		<>
+			<SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType["Pet Stasis"])} />
+			<input style={{borderColor: `var(--magic)`}}className={styles.numberInput} type="number" value={petMagicHeal} onChange={(e) => dispatch(setPetMagicHeal([index, parseInt(e.target.value)]))}/>
+		</>
+	)
 }
 
 function Stats() {
@@ -105,6 +119,10 @@ export function SetPage() {
 			</div>
 			<StatusEffectToggle />
 			<Stats />
+			<div className={styles.statsRow}>
+				<PetMagicHeal />
+			</div>
+
 		</div>
 		<Outlet  />
 	</Modal>

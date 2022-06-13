@@ -1,6 +1,8 @@
 
 import React, { CSSProperties } from "react";
-import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Subattack, Trap, VampireBlast } from "rotmg-utils";
+import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "rotmg-utils";
+import { isActivateCalculated } from "../../dps/dps-calculator";
+import { getTextureForEffect } from "../../util";
 import SpriteComponent from "../SpriteComponent"
 import styles from "./Tooltip.module.css"
 
@@ -159,6 +161,7 @@ export default class Tooltip extends React.Component<Props, State> {
 					}
 					return null;
 				})}
+				{isActivateCalculated(activate.getName()) && <SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType.Stunned)}/>}
 			</div>
 		}
 		return null;
@@ -279,6 +282,7 @@ export default class Tooltip extends React.Component<Props, State> {
 						<div>
 							<div className={styles.smallDarkText}>
 								Damage
+								{isProjectileAbility(this.getItemData()) && <SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType.Stunned)}/>}
 							</div>
 							<div className={styles.largeText} style={this.getDamageTextStyle()}>
 								{this.getDamageText()}
@@ -501,3 +505,7 @@ Tooltip.activateRenderers.set("VampireBlast", (activate: VampireBlast, player: P
 		"squares"
 	]
 })
+
+function isProjectileAbility(data: Equipment) {
+	return data.activates.findIndex(a => a.getName() === "Shoot" || a.getName() === "BulletCreate") !== -1;
+}

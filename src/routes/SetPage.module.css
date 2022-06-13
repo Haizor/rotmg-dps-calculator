@@ -29,7 +29,7 @@
 	padding: 4px;
 }
 
-.statInput {
+.numberInput {
 	width: 52px;
 	background-color: var(--background-dark-gray);
 	border: 1px solid;

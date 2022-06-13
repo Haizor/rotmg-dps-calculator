@@ -1,4 +1,4 @@
-import { Activate, BulletCreate, Equipment, Proc, Projectile, StatBoostSelf, Stats, StatusEffectType } from "rotmg-utils";
+import { Activate, BulletCreate, BulletNova, Equipment, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, VampireBlast } from "rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, PlayerState } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -11,7 +11,111 @@ type ProcCooldowns = {
 	[key: string]: number;
 }
 
-type ProcNames = "onShootProcs" | "abilityProcs" | "onHitProcs"
+type ProcNames = "onShootProcs" | "abilityProcs" | "onHitProcs";
+
+const mpHealToWis: any = {
+    0: 0,
+    1: 1.7,
+    2: 1.8,
+    3: 1.9,
+    4: 2.1,
+    5: 2.3,
+    6: 2.3,
+    7: 2.4,
+    8: 2.5,
+    9: 2.6,
+    10: 2.7,
+    11: 2.8,
+    12: 2.9,
+    13: 3.0,
+    14: 3.1,
+    15: 3.2,
+    16: 3.2,
+    17: 3.3,
+    18: 3.4,
+    19: 3.5,
+    20: 7.1,
+    21: 7.3,
+    22: 7.4,
+    23: 7.6,
+    24: 7.7,
+    25: 7.9,
+    26: 8.0,
+    27: 8.2,
+    28: 12.6,
+    29: 12.8,
+    30: 13.1,
+    31: 13.3,
+    32: 13.6,
+    33: 13.8,
+    34: 18.8,
+    35: 19.1,
+    36: 19.4,
+    37: 19.7,
+    38: 20.0,
+    39: 25.3,
+    40: 25.7,
+    41: 26.2,
+    42: 26.6,
+    43: 32.5,
+    44: 33.1,
+    45: 33.6,
+    46: 40.1,
+    47: 41.0,
+    48: 41.9,
+    49: 49.0,
+    50: 50.2,
+    51: 51.1,
+    52: 58.6,
+    53: 59.7,
+    54: 60.9,
+    55: 69.0,
+    56: 70.2,
+    57: 78.5,
+    58: 79.8,
+    59: 81.2,
+    60: 90.1,
+    61: 91.5,
+    62: 100.7,
+    63: 102.3,
+    64: 112.0,
+    65: 113.8,
+    66: 123.1,
+    67: 132.5,
+    68: 133.7,
+    69: 143.4,
+    70: 144.7,
+    71: 155.3,
+    72: 166.1,
+    73: 168.4,
+    74: 179.7,
+    75: 191.4,
+    76: 196.1,
+    77: 210.6,
+    78: 225.6,
+    79: 242.0,
+    80: 248.6,
+    81: 265.2,
+    82: 282.6,
+    83: 300.9,
+    84: 320.1,
+    85: 328.6,
+    86: 340.4,
+    87: 352.1,
+    88: 363.8,
+    89: 375.6,
+    90: 387.3,
+    91: 411.2,
+    92: 436.6,
+    93: 463.7,
+    94: 505.9,
+    95: 537.2,
+    96: 570.8,
+    97: 606.9,
+    98: 645.8,
+    99: 703.8,
+    100: 750.0
+}
 
 function getStats( map: StatsMap) {
 	return Object.values(map).reduce((prev, curr) => {
@@ -206,11 +310,14 @@ class WeaponDPSProvider implements DPSProvider {
 	}
 }
 
+const mpRatio = 0.012;
+
 class AbilityDPSProvider implements DPSProvider {
-	mana: number = 0;
+	mana: number = -1;
 	state: PlayerState;
 	equipment: (Equipment | undefined)[];
 	procCooldowns: ProcCooldowns = {};
+	abilityUses: number = 0;
 
 	constructor(state: PlayerState) {
 		this.state = state;
@@ -218,9 +325,40 @@ class AbilityDPSProvider implements DPSProvider {
 	}
 
 	simulate(data: DPSProviderOptions): boolean {
-		processProcs("abilityProcs", this.procCooldowns, this.equipment, data);
+		const { statsMap, elapsed } = data;
+		const ability = this.equipment[1];
+
+		if (ability === undefined) return false;
+		this.abilityUses += (elapsed / ability.cooldown);
+		
+		const stats = getStats(statsMap);
+
+		if (this.mana === -1) {
+			this.mana = stats.mp;
+		}
+
+		
+		this.mana = Math.min(stats.mp, this.mana + ((stats.wis + mpHealToWis[this.state.petMagicHeal]) * mpRatio));
+
+		while (this.abilityUses > 0 && this.mana > ability.mpCost) {
+			this.useAbility(data, ability);
+			processProcs("abilityProcs", this.procCooldowns, this.equipment, data);
+			this.abilityUses--;
+			this.mana -= ability.mpCost;
+		}
+
+
 
 		return true;
+	}
+
+	useAbility(data: DPSProviderOptions, ability: Equipment) {
+		for (let activate of ability.activates) {
+			const providerConstructor = ActivateProviders[activate.getName()];
+			if (providerConstructor === undefined) continue;
+
+			data.addProvider(new providerConstructor(ability, activate));
+		}
 	}
 
 	getResult(): number {
@@ -231,43 +369,102 @@ class AbilityDPSProvider implements DPSProvider {
 const NormalStats: Stats = new Stats();
 NormalStats.atk = 50;
 
-class BulletCreateProvider implements DPSProvider {
-	proc: BulletCreate;
-	proj: Projectile | undefined;
+abstract class ActivateProvider<T> implements DPSProvider {
+	activate: T;
+	equip: Equipment;
 	dps: number = 0;
 
-	constructor(equip: Equipment, proc: BulletCreate) {
-		if (proc.type !== undefined) {
-			const procEquip = Manager.get<Equipment>(AssetTypes.Equipment, proc.type)?.value;
-			if (procEquip !== undefined) {
-				this.proj = procEquip?.projectiles[0];
-			}
-		} else this.proj = equip.projectiles[0];
-		this.proc = proc;
+	constructor(equip: Equipment, activate: T) {
+		this.equip = equip;
+		this.activate = activate;
 	}
 
-	simulate(data: DPSProviderOptions): boolean {
-		if (this.proj === undefined) return false;
+	abstract simulate(data: DPSProviderOptions): boolean;
 
-		this.dps += getAverageDamage([], this.proj, NormalStats, data.def)
-
-		return false;
-	}
-	
 	getResult(): number {
 		return this.dps;
 	}
 }
 
-class StatBoostProvider implements DPSProvider {
+abstract class OneTimeActivateProvider<T> extends ActivateProvider<T> {
+	abstract run(data: DPSProviderOptions): void;
+
+	simulate(data: DPSProviderOptions): boolean {
+		this.run(data);
+		return false;
+	}
+
+	getResult(): number {
+		return this.dps;
+	}
+}
+
+class ShootProvider extends OneTimeActivateProvider<Shoot> {
+	run(data: DPSProviderOptions): void {
+		for (let i = 0; i < this.equip.numProjectiles; i++) {
+			this.dps += getAverageDamage([], this.equip.projectiles[0], NormalStats, data.def);
+		}
+	}
+}
+
+class BulletNovaProvider extends OneTimeActivateProvider<BulletNova> {
+	run(data: DPSProviderOptions): void {
+		for (let i = 0; i < this.activate.numShots; i++) {
+			this.dps += getAverageDamage([], this.equip.projectiles[0], NormalStats, data.def);
+		}
+	}
+}
+
+class BulletCreateProvider extends OneTimeActivateProvider<BulletCreate> {
+	proj: Projectile | undefined;
+
+	constructor(equip: Equipment, activate: BulletCreate) {
+		super(equip, activate);
+		if (activate.type !== undefined) {
+			const procEquip = Manager.get<Equipment>(AssetTypes.Equipment, activate.type)?.value;
+			if (procEquip !== undefined) {
+				this.proj = procEquip?.projectiles[0];
+			}
+		} else this.proj = equip.projectiles[0];
+	}
+
+	run(data: DPSProviderOptions): void {
+		if (this.proj === undefined) return;
+
+		this.dps += getAverageDamage([], this.proj, NormalStats, data.def);
+	}
+}
+
+class PoisonGrenadeProvider extends ActivateProvider<PoisonGrenade> {
+	time: number = 0;
+
+	simulate(data: DPSProviderOptions): boolean {
+		if (this.time === 0) {
+			this.dps += this.activate.impactDamage;
+		}
+
+		this.dps += ((this.activate.totalDamage / this.activate.duration) * data.elapsed);
+
+		this.time += data.elapsed;
+
+		return this.time < this.activate.duration;
+	}
+}
+
+
+class VampireBlastProvider extends OneTimeActivateProvider<VampireBlast> {
+	run(data: DPSProviderOptions): void {
+		const stats = getStats(data.statsMap);
+
+		const damage = this.activate.getDamage(stats.wis);
+
+		this.dps += Math.max(damage - (data.def - this.activate.ignoreDef), damage * 0.1);
+	}
+}
+
+class StatBoostProvider extends ActivateProvider<StatBoostSelf> {
 	duration: number = 0;
 	totalDuration: number = 0;
-	equip: Equipment;
-	proc: StatBoostSelf;
-	constructor(equip: Equipment, proc: StatBoostSelf) {
-		this.equip = equip;
-		this.proc = proc;
-	}
 
 	simulate(data: DPSProviderOptions): boolean {
 		const { elapsed, statsMap } = data;
@@ -276,9 +473,9 @@ class StatBoostProvider implements DPSProvider {
 
 		if (this.duration === 0) {
 			const stats = new Stats();
-			stats[Stats.convertStatName(this.proc.stat)] = this.proc.getAmount(baseStats.wis);
+			stats[Stats.convertStatName(this.activate.stat)] = this.activate.getAmount(baseStats.wis);
 			statsMap[this.getStatKey()] = stats;
-			this.totalDuration = this.proc.getDuration(baseStats.wis)
+			this.totalDuration = this.activate.getDuration(baseStats.wis)
 		}
 		this.duration += elapsed;
 
@@ -300,6 +497,15 @@ class StatBoostProvider implements DPSProvider {
 }
 
 const ActivateProviders: {[key: string]: new (equip: Equipment, proc: any) => DPSProvider} = {
+	"Shoot": ShootProvider,
 	"BulletCreate": BulletCreateProvider,
-	"StatBoostSelf": StatBoostProvider
+	"BulletNova": BulletNovaProvider,
+	"PoisonGrenade": PoisonGrenadeProvider,
+	"StatBoostSelf": StatBoostProvider,
+	"StatBoostAura": StatBoostProvider,
+	"VampireBlast": VampireBlastProvider
+}
+
+export function isActivateCalculated(key: string) {
+	return ActivateProviders[key] !== undefined;
 }
