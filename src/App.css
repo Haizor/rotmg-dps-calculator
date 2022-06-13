@@ -23,6 +23,7 @@ html, body, #root {
 	height: 100%;
 	background-color: var(--background-dark);
 	color: white;
+	overflow: hidden;
 }
 
 .highlightHover {

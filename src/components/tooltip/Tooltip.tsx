@@ -15,16 +15,24 @@ type Player = {
 	stats: Stats;
 }
 
+type State = {
+	x: number;
+	y: number;
+	scale: number;
+}
+
 type ActivateRendererTextType = "normal" | "value" | "wis" | "linebreak"
 type ActivateRendererText = { text?: string, type: ActivateRendererTextType, noMarginLeft?: boolean, noMarginRight?: boolean } | string
 type ActivateRenderer<T> = (activate: T, player: Player | undefined) => ActivateRendererText[]
 
-export default class Tooltip extends React.Component<Props> {
+export default class Tooltip extends React.Component<Props, State> {
 	static activateRenderers: Map<string, ActivateRenderer<any>> = new Map();
 
 	tooltipDiv: React.RefObject<HTMLDivElement>
+
 	constructor(props: Props) {
 		super(props);
+		this.state = { x: 0, y: 0, scale: 1 }
 		this.tooltipDiv = React.createRef();
 	}
 
@@ -200,28 +208,55 @@ export default class Tooltip extends React.Component<Props> {
 		}
 	}
 
-	render() {
+	componentDidMount() {
+		this.updateOffset();
+	}
+
+	componentDidUpdate(prevProps: Props, prevState: State) {
+		if (prevProps.x !== this.props.x || prevProps.y !== this.props.y) {
+			this.updateOffset();
+		}
+	}
+
+	updateOffset() {
 		let { x, y } = this.props;
+		let scaleX = this.state.scale, scaleY = this.state.scale;
 
 		const div = this.tooltipDiv.current;
 		if (div !== null) {
 			const rect = div.getBoundingClientRect();
 
 			if (x + rect.width > window.innerWidth) {
-				x -= rect.width;
+				x += (window.innerWidth - (x + rect.width));
 			}
+
 			if (y + rect.height > window.innerHeight) {
-				y -= rect.height;
+				y += (window.innerHeight - (y + rect.height));
 			}
-			if (x < 0) {
-				x = 0;
+
+			if (rect.width > window.innerWidth) {
+				scaleX = window.innerWidth / rect.width;
 			}
-			if (y < 0) {
-				y = 0;
+
+			if (rect.height > window.innerHeight) {
+				scaleY = window.innerHeight / rect.height;
 			}
 		}
+
+		this.setState({x, y, scale: Math.min(scaleX, scaleY)});
+	}
+
+	render() {
+		let { x, y, scale } = this.state;
+
+		const style: CSSProperties = {
+			left: x + "px", 
+			top: y + "px",
+			transform: `scale(${Math.floor(scale * 100)}%)`
+		}
+
 		return (
-			<div ref={this.tooltipDiv} className={styles.tooltipBack} style={{left: x + "px", top: y + "px"}}>
+			<div ref={this.tooltipDiv} className={styles.tooltipBack} style={style}>
 				<div className={styles.tooltipBorder} style={this.getBorderStyle()} />
 				<div className={styles.tooltipTop}>
 					<div className={styles.topItemInfo}>
