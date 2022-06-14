@@ -311,13 +311,11 @@ class WeaponDPSProvider implements DPSProvider {
 	getAttacksPerSecond(weapon: Equipment, stats: Stats): number {
 		let aps = 0;
 		if (hasStatusEffect(this.state.statusEffects, StatusEffectType.Dazed)) aps = 1.5;
-		aps = stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1);
+		aps = stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1) * weapon.rateOfFire;
 
 		if (weapon.burstCount === undefined || weapon.burstDelay === undefined || weapon.burstMinDelay === undefined) return aps;
 
 		const currBurstDelay = Math.min(Math.max(weapon.burstDelay - ((weapon.burstDelay - weapon.burstMinDelay) / 100 * stats.dex), weapon.burstMinDelay), weapon.burstDelay);
-
-		console.log(currBurstDelay)
 
 		return (weapon.burstCount / currBurstDelay)
 

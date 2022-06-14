@@ -2,6 +2,7 @@
   "name": "rotmg-dps-calculator",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@react-spring/web": "^9.4.5",
     "@reduxjs/toolkit": "^1.8.2",
