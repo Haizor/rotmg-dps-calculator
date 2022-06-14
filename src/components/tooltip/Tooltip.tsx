@@ -1,6 +1,6 @@
 
 import React, { CSSProperties } from "react";
-import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
+import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, EquipmentSet, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { isActivateCalculated } from "../../dps/dps-calculator";
 import { getTextureForEffect } from "../../util";
 import SpriteComponent from "../SpriteComponent"
@@ -42,7 +42,7 @@ export default class Tooltip extends React.Component<Props, State> {
 		if (this.props.item.data.tier === "UT") {
 			return "#B33CFE";
 		} else if (this.props.item.data.tier === "ST") {
-			return "#D46109"
+			return "#ce8e13"
 		}
 		return "white"
 	}
@@ -167,6 +167,41 @@ export default class Tooltip extends React.Component<Props, State> {
 		return null;
 	}
 
+	renderSet() {
+		const data = this.getItemData();
+		if (data.set === undefined) return null;
+
+		const renderActivates = (activate: Activate[], name: string) => {
+			if (activate.length === 0) return null;
+
+			return (
+				<div className={styles.setStats}>
+					<div className={styles.smallDarkText} style={{color: this.getColor()}}>{name}</div>
+					{this.renderStats(EquipmentSet.statsFromActivates(activate))}
+				</div>
+			)
+		}
+
+		return <>
+			<div className={styles.splitter} style={{backgroundColor: this.getColor()}} />
+			<div className={styles.propertyName} style={{color: this.getColor()}}>{data.set.id}</div>
+			<div className={styles.setStatsContainer}>
+				{renderActivates(data.set.activateOnEquip2, "2 Pieces")}
+				{renderActivates(data.set.activateOnEquip3, "3 Pieces")}
+				{renderActivates(data.set.activateOnEquipAll, "Full Set")}
+			</div>
+		</>
+	}
+
+	renderDescription() {
+		const description = this.getItemData().description;
+		if (description === undefined) return null;
+		
+		return description.split("\\n").map((line) => {
+			return <>{line}<br/></>
+		})
+	}
+
 	renderProperty(name: string | undefined, value: any) {
 		if (value === undefined) return;
 
@@ -183,21 +218,20 @@ export default class Tooltip extends React.Component<Props, State> {
 		</div>
 	}
 
-	renderStats() {
-		const data = this.getItemData();
-		if (data.stats.isZero()) return;
+	renderStats(stats: Stats, onEquipText: boolean = false) {
+		if (stats.isZero()) return;
 		return <div className={styles.statContainer}>
-			<div className={styles.propertyName} style={{margin: "0px 0px"}}>
+			{onEquipText && <div className={styles.propertyName} style={{margin: "0px 0px"}}>
 				On Equip:
-			</div>
-			{data.stats.hp !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.hp)} Max HP`}</div>}
-			{data.stats.mp !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.mp)} Max MP`}</div>}
-			{data.stats.atk !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.atk)} Attack`}</div>}
-			{data.stats.def !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.def)} Defense`}</div>}
-			{data.stats.spd !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.spd)} Speed`}</div>}
-			{data.stats.dex !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.dex)} Dexterity`}</div>}
-			{data.stats.vit !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.vit)} Vitality`}</div>}
-			{data.stats.wis !== 0 && <div className={styles.stat}>{`${this.formatNumber(data.stats.wis)} Wisdom`}</div>}
+			</div>}
+			{stats.hp !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.hp)} Max HP`}</div>}
+			{stats.mp !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.mp)} Max MP`}</div>}
+			{stats.atk !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.atk)} Attack`}</div>}
+			{stats.def !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.def)} Defense`}</div>}
+			{stats.spd !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.spd)} Speed`}</div>}
+			{stats.dex !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.dex)} Dexterity`}</div>}
+			{stats.vit !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.vit)} Vitality`}</div>}
+			{stats.wis !== 0 && <div className={styles.stat}>{`${this.formatNumber(stats.wis)} Wisdom`}</div>}
 		</div>
 	}
 
@@ -295,7 +329,7 @@ export default class Tooltip extends React.Component<Props, State> {
 						</div>
 					)}
 					<div className={styles.descriptionText}>
-						{this.getItemData().description}
+						{this.renderDescription()}
 					</div>
 					<div className={styles.splitter} style={{backgroundColor: this.getColor()}} />
 					{this.renderSubAttacks()}
@@ -316,10 +350,11 @@ export default class Tooltip extends React.Component<Props, State> {
 							{this.getItemData().projectiles[0]?.armorPiercing && this.renderProperty(undefined, "Ignores defense of target")}
 						</>
 					}
-					
-					{this.renderStats()}
+
+					{this.renderStats(this.getItemData().stats, true)}
 					{this.getItemData().mpCost !== 0 && this.renderProperty("MP Cost", this.getItemData().mpCost)}
 					{this.getItemData().xpBonus && this.renderProperty("XP Bonus", this.getItemData().xpBonus + "%")}
+					{this.renderSet()}
 				</div>
 				<div className={styles.tooltipBottom}>
 					{this.getItemData().feedPower && <div className={styles.feedPower}>Feed Power: {this.getItemData().feedPower}</div>}

@@ -1,3 +1,7 @@
+# v0.2.0 
+* ST support
+* Ability DPS support for Traps and Shurikens
+
 # v0.1.1
 * Fixed tooltips not switching sides when reaching the edge of the screen
 * Color picker style changes & usability

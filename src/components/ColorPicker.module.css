@@ -11,6 +11,13 @@
 	background-color: var(--background-dark-gray) !important;
 }
 
+.colorPickerContainer {
+	outline: none;
+	border-color: transparent;
+	box-shadow: none;
+	width: 300px;
+}
+
 .colorPicker label {
 	color: white !important;
 }

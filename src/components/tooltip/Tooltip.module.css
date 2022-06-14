@@ -145,3 +145,12 @@
 .statContainer {
 	margin-bottom: 8px;
 }
+
+.setStatsContainer {
+	display: flex;
+	flex-direction: row;
+}
+
+.setStats {
+	flex: 1;
+}
