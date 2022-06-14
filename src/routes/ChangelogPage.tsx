@@ -18,7 +18,7 @@ export function ChangelogPage() {
 		<ReactMarkdown children={changelog} />
 	) : <>Loading...</>
 
-	return <Modal>
+	return <Modal style={{padding: "32px"}}>
 		{element}
 	</Modal>
 }

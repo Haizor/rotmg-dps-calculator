@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SketchPicker } from "react-color";
 import styles from "./ColorPicker.module.css"
 
@@ -9,12 +9,22 @@ interface ColorPickerProps {
 
 export function ColorPicker(props: ColorPickerProps) {
 	const [ showPicker, setShowPicker ] = useState(false);
+	const pickerDiv = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (pickerDiv.current !== null)  {
+			pickerDiv.current.focus();
+		}
+	})
 
 	const picker = showPicker ? (
-		<SketchPicker color={props.color} onChange={(color) => {props.onChange(color.hex)}} onChangeComplete={(color) => setShowPicker(false)} />
+		<div ref={pickerDiv} onBlur={() => setShowPicker(false)} tabIndex={1}>
+			<SketchPicker className={styles.colorPicker} color={props.color} onChange={(color) => {props.onChange(color.hex)}} />
+		</div>
+
 	) : null
 
 	return (
-		<div className={styles.colorSwatch} style={{backgroundColor: props.color}} onClick={() => setShowPicker(!showPicker)}>{picker}</div>
+		<div className={styles.colorSwatch} style={{backgroundColor: props.color}} onClick={() => setShowPicker(true)}>{picker}</div>
 	)
 }

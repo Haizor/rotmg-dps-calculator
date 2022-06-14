@@ -1,3 +1,9 @@
+# v0.1.1
+* Fixed tooltips not switching sides when reaching the edge of the screen
+* Color picker style changes & usability
+* Pet magic heal field is now capped properly
+* Rate of Fire is now included in DPS calculations
+
 # v0.1.0
 
 Initial release!

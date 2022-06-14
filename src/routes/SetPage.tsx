@@ -1,3 +1,4 @@
+import { ChangeEvent } from "react";
 import { Link, Outlet, useParams } from "react-router-dom";
 import { StatusEffectType } from "rotmg-utils";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
@@ -64,10 +65,15 @@ function PetMagicHeal() {
 	const dispatch = useAppDispatch();
 	const petMagicHeal = useAppSelector((state) => state.sets[index].petMagicHeal);
 
+	const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+		const amount = Math.max(0, Math.min(100, e.target.valueAsNumber))
+		dispatch(setPetMagicHeal([index, amount]))
+	}
+
 	return (
 		<>
 			<SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType["Pet Stasis"])} />
-			<input style={{borderColor: `var(--magic)`}}className={styles.numberInput} type="number" value={petMagicHeal} onChange={(e) => dispatch(setPetMagicHeal([index, parseInt(e.target.value)]))}/>
+			<input min={0} max={100} style={{borderColor: `var(--magic)`}}className={styles.numberInput} type="number" value={petMagicHeal} onChange={onChange}/>
 		</>
 	)
 }

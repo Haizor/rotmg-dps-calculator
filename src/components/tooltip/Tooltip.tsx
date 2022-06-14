@@ -230,7 +230,7 @@ export default class Tooltip extends React.Component<Props, State> {
 			const rect = div.getBoundingClientRect();
 
 			if (x + rect.width > window.innerWidth) {
-				x += (window.innerWidth - (x + rect.width));
+				x -= rect.width;
 			}
 
 			if (y + rect.height > window.innerHeight) {

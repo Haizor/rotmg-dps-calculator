@@ -4,3 +4,19 @@
 	border-radius: 8px;
 	margin: 4px;
 }
+
+.colorPicker {
+	position: relative;
+	z-index: 1;
+	background-color: var(--background-dark-gray) !important;
+}
+
+.colorPicker label {
+	color: white !important;
+}
+
+.colorPicker input {
+	color: white !important;
+	background-color: black !important;
+	border-radius: 2px;
+}
