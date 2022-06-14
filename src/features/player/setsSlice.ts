@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Equipment, Player, Stats, StatusEffectType } from "rotmg-utils";
+import { Equipment, Player, Stats, StatusEffectType } from "@haizor/rotmg-utils";
 import { AssetTypes, getEquipment, Manager } from '../../asset';
 import { BasicStats, fullToBasicStats } from '../../util';
 import * as _ from "lodash";

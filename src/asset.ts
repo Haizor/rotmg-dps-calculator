@@ -1,4 +1,4 @@
-import { AssetManager, AssetManagerConfig, Equipment, RotMGAssetLoader, RotMGSpritesheetLoader } from "rotmg-utils"
+import { AssetManager, AssetManagerConfig, Equipment, RotMGAssetLoader, RotMGSpritesheetLoader } from "@haizor/rotmg-utils"
 import { useAppSelector } from "./app/hooks";
 import { RootState } from "./app/store";
 import Sprite from "./components/SpriteComponent";
@@ -33,7 +33,8 @@ const config: AssetManagerConfig = {
 				type: "object"
 			},
 			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/equip.xml"
+				"https://www.haizor.net/rotmg/assets/production/xml/equip.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/equipmentsets.xml"
 			]
 		},
 		{

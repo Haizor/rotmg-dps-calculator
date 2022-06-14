@@ -4,6 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "@haizor/rotmg-utils": "^1.1.1",
     "@react-spring/web": "^9.4.5",
     "@reduxjs/toolkit": "^1.8.2",
     "@testing-library/jest-dom": "^5.16.4",
@@ -24,7 +25,6 @@
     "react-redux": "^8.0.2",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.1",
-    "rotmg-utils": "github:haizor/rotmg-utils",
     "typescript": "^4.7.3",
     "web-vitals": "^2.1.4"
   },

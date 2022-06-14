@@ -1,4 +1,4 @@
-import { BasicTexture, Stats, StatusEffectType } from "rotmg-utils";
+import { BasicTexture, Stats, StatusEffectType } from "@haizor/rotmg-utils";
 
 const IndexMapper: any = {
 	[StatusEffectType.Armored]: 16,

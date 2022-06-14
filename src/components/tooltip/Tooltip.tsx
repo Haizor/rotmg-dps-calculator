@@ -1,6 +1,6 @@
 
 import React, { CSSProperties } from "react";
-import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "rotmg-utils";
+import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { isActivateCalculated } from "../../dps/dps-calculator";
 import { getTextureForEffect } from "../../util";
 import SpriteComponent from "../SpriteComponent"
@@ -507,5 +507,5 @@ Tooltip.activateRenderers.set("VampireBlast", (activate: VampireBlast, player: P
 })
 
 function isProjectileAbility(data: Equipment) {
-	return data.activates.findIndex(a => a.getName() === "Shoot" || a.getName() === "BulletCreate") !== -1;
+	return data.activates.findIndex(a => a.getName() === "Shoot" || a.getName() === "BulletCreate" || a.getName() === "ShurikenAbility") !== -1;
 }

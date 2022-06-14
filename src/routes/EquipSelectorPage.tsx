@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Equipment, Item } from "rotmg-utils";
+import { Equipment, Item } from "@haizor/rotmg-utils";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { AssetTypes, Manager } from "../asset";
 import { Modal } from "../components/Modal";

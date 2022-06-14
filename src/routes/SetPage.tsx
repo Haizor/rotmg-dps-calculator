@@ -1,6 +1,6 @@
 import { ChangeEvent } from "react";
 import { Link, Outlet, useParams } from "react-router-dom";
-import { StatusEffectType } from "rotmg-utils";
+import { StatusEffectType } from "@haizor/rotmg-utils";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { ColorPicker } from "../components/ColorPicker";
 import { EquipmentSlot } from "../components/EquipmentSlot";

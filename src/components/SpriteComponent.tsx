@@ -1,6 +1,6 @@
 import React, { MouseEventHandler, ReactNode } from "react";
 import { CSSProperties } from "react";
-import { Sprite, TextureProvider, AssetManager } from "rotmg-utils";
+import { Sprite, TextureProvider, AssetManager } from "@haizor/rotmg-utils";
 
 
 type Props = {

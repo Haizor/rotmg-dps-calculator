@@ -1,4 +1,4 @@
-import { Activate, BulletCreate, BulletNova, Equipment, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, VampireBlast } from "rotmg-utils";
+import { Activate, BulletCreate, BulletNova, ConditionEffect, Equipment, EquipmentSet, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, PlayerState } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -191,12 +191,15 @@ export default class DPSCalculator {
 
 	constructor(state: PlayerState) {
 		this.state = state;
-		this.stats.base = getEquipmentFromState(state).reduce(((prev, curr) => {
+		const equipment = getEquipmentFromState(state);
+		this.stats.base = equipment.reduce(((prev, curr) => {
 			if (curr === undefined) {
 				return prev;
 			}
 			return prev.add(curr.stats)
 		}), basicToFullStats(this.state.stats));
+
+		this.stats.set = EquipmentSet.getTotalStatsForSets(equipment);
 	}
 
 	getDPS() {
@@ -353,14 +356,15 @@ class AbilityDPSProvider implements DPSProvider {
 			this.mana = stats.mp;
 		}
 
+		const mpCost = ability.mpEndCost ?? ability.mpCost;
 		
 		this.mana = Math.min(stats.mp, this.mana + ((stats.wis + mpHealToWis[this.state.petMagicHeal]) * mpRatio));
 
-		while (this.abilityUses > 0 && this.mana > ability.mpCost) {
+		while (this.abilityUses > 0 && this.mana > mpCost) {
 			this.useAbility(data, ability);
 			processProcs("abilityProcs", this.procCooldowns, this.equipment, data);
 			this.abilityUses--;
-			this.mana -= ability.mpCost;
+			this.mana -= mpCost;
 		}
 
 
@@ -467,6 +471,11 @@ class PoisonGrenadeProvider extends ActivateProvider<PoisonGrenade> {
 	}
 }
 
+class TrapProvider extends OneTimeActivateProvider<Trap> {
+	run(data: DPSProviderOptions): void {
+		this.dps += this.activate.totalDamage;
+	}
+}
 
 class VampireBlastProvider extends OneTimeActivateProvider<VampireBlast> {
 	run(data: DPSProviderOptions): void {
@@ -514,12 +523,14 @@ class StatBoostProvider extends ActivateProvider<StatBoostSelf> {
 
 const ActivateProviders: {[key: string]: new (equip: Equipment, proc: any) => DPSProvider} = {
 	"Shoot": ShootProvider,
+	"ShurikenAbility": ShootProvider,
 	"BulletCreate": BulletCreateProvider,
 	"BulletNova": BulletNovaProvider,
 	"PoisonGrenade": PoisonGrenadeProvider,
 	"StatBoostSelf": StatBoostProvider,
 	"StatBoostAura": StatBoostProvider,
-	"VampireBlast": VampireBlastProvider
+	"VampireBlast": VampireBlastProvider,
+	"Trap": TrapProvider
 }
 
 export function isActivateCalculated(key: string) {

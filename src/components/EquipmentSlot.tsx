@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Equipment, Item } from "rotmg-utils";
+import { Equipment, Item } from "@haizor/rotmg-utils";
 import { AssetTypes, useAssetSelector } from "../asset";
 import styles from "./EquipmentSlot.module.css";
 import SpriteComponent from "./SpriteComponent";
