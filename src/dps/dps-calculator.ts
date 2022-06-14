@@ -284,10 +284,13 @@ class WeaponDPSProvider implements DPSProvider {
 	simulate(options: DPSProviderOptions): boolean {
 		const { elapsed, def, statsMap } = options;
 		const weapon = this.equipment[0];
-		const stats = getStats(statsMap);
-		const attacksPerSecond = hasStatusEffect(this.state.statusEffects, StatusEffectType.Dazed) ? 1.5 : stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1);
-		this.attackCountBuffer += elapsed * attacksPerSecond;
+
 		if (weapon === undefined || !(weapon.hasProjectiles())) return false;
+
+		const stats = getStats(statsMap);
+		let attacksPerSecond = this.getAttacksPerSecond(weapon, stats);
+		
+		this.attackCountBuffer += elapsed * attacksPerSecond;
 		
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
@@ -303,6 +306,21 @@ class WeaponDPSProvider implements DPSProvider {
 		}
 
 		return true;
+	}
+
+	getAttacksPerSecond(weapon: Equipment, stats: Stats): number {
+		let aps = 0;
+		if (hasStatusEffect(this.state.statusEffects, StatusEffectType.Dazed)) aps = 1.5;
+		aps = stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1);
+
+		if (weapon.burstCount === undefined || weapon.burstDelay === undefined || weapon.burstMinDelay === undefined) return aps;
+
+		const currBurstDelay = Math.min(Math.max(weapon.burstDelay - ((weapon.burstDelay - weapon.burstMinDelay) / 100 * stats.dex), weapon.burstMinDelay), weapon.burstDelay);
+
+		console.log(currBurstDelay)
+
+		return (weapon.burstCount / currBurstDelay)
+
 	}
 
 	getResult(): number {

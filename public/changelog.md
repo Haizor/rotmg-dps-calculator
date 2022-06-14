@@ -13,3 +13,4 @@ Major changes from the previous version
 A few things aren't implemented at the moment:
 * Custom weapons. They'll most likely be implemented using the sandbox, but it's low priority at the moment.
 * Enemies aren't shown at the various DEF values.
+* Burst support is kind of implemented, but it's probably wrong since I have virtually no info about it.
