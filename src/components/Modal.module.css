@@ -10,3 +10,16 @@
 	align-items: center;
 	justify-content: center;
 }
+
+.modalInner {
+	display: flex;
+	flex-direction: column;
+
+	max-width: 80%;
+	max-height: 80%;
+	overflow: auto;
+
+	background-color: black;
+	border-radius: 16px;
+	padding: 8px;
+}

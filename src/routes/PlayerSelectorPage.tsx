@@ -21,10 +21,10 @@ function PlayerSelectorPage() {
 		</div>
 	));
 
-	return <Modal>
-		<div className={styles.container} onClick={e => e.stopPropagation()} >
-			{players}
-		</div>
+	return <Modal className={styles.container}>
+
+		{players}
+
 	</Modal>
 }
 

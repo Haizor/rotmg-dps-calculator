@@ -8,9 +8,10 @@ import {
 import DefenseGraph from "./components/DefenseGraph";
 import styles from "./App.module.css";
 import SetsDisplay from "./components/SetsDisplay";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import "./App.css"
 import { TopBar } from "./components/TopBar";
+import { tryDisplayChangelog } from "./changelog";
 
 const graphs = [
 	<DefenseGraph />
@@ -19,6 +20,7 @@ const graphs = [
 function App() {
 	const [ loaded, setLoaded ] = useState(false);
 	const [ graphIndex, setGraphIndex ] = useState(0);
+	const navigate = useNavigate();
 
 	const dispatch = useAppDispatch();
 
@@ -26,6 +28,7 @@ function App() {
 		ManagerLoading.then(() => {
 			dispatch(setPlayer([0, 0x0307]));
 			setLoaded(true);
+			tryDisplayChangelog(navigate);
 		});
 	}, [ dispatch ])
 

@@ -9,6 +9,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SetPage from './routes/SetPage';
 import EquipSelectorPage from './routes/EquipSelectorPage';
 import PlayerSelectorPage from './routes/PlayerSelectorPage';
+import { ChangelogPage } from './routes/ChangelogPage';
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
@@ -23,6 +24,7 @@ root.render(
 							<Route path="equipment/:equipIndex" element={ <EquipSelectorPage /> } />
 							<Route path="player" element={ <PlayerSelectorPage /> } />
 						</Route>
+						<Route path="changelog" element={ <ChangelogPage /> } />
 					</Route>
 				</Routes>
 			</MemoryRouter>

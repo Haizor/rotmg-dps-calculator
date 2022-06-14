@@ -126,7 +126,7 @@ function DefenseGraph() {
 	}, [sets])
 
 	return (
-		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px"}}>
+		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px", overflow: "hidden"}}>
 			<Line datasetIdKey="id" ref={chart} data={data.current} options={options} redraw={true}/>
 		</div>
 

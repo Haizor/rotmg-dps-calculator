@@ -1,13 +1,6 @@
 .container {
-	display: flex;
-	flex-direction: row;
+	flex-direction: row !important;
 	flex-wrap: wrap;
-	max-width: 80%;
-	max-height: 80%;
-	overflow-y: scroll;
-	background-color: black;
-	padding: 16px;
-	border-radius: 32px;
 }
 
 .remove {

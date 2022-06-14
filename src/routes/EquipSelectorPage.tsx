@@ -41,10 +41,10 @@ function EquipSelectorPage() {
 		</div>
 	)];
 
-	return <Modal>
-		<div className={styles.container} onClick={e => e.stopPropagation()}>
-			{equips}
-		</div>
+	return <Modal className={styles.container}>
+
+		{equips}
+
 	</Modal>
 }
 

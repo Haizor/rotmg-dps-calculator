@@ -33,3 +33,7 @@
 	background-color: white;
 	border-radius: 50%;
 }
+
+.invert {
+	filter: invert(100%);
+}

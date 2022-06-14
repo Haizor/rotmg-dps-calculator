@@ -104,8 +104,7 @@ export function SetPage() {
 	const player = getPlayerFromState(set);
 	const equipment = getEquipmentFromState(set);
 
-	return <Modal>
-		<div className={styles.container} onClick={e => e.stopPropagation()}>
+	return <Modal style={{overflow: "visible"}}>
 			<div className={styles.equipmentRow}>
 				<div className={styles.player + " highlightHover"}>
 					<Link to="player">
@@ -122,8 +121,6 @@ export function SetPage() {
 			<div className={styles.statsRow}>
 				<PetMagicHeal />
 			</div>
-
-		</div>
 		<Outlet  />
 	</Modal>
 }
