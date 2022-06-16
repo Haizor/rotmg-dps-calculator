@@ -1,7 +1,8 @@
-import { AssetManager, AssetManagerConfig, Equipment, RotMGAssetLoader, RotMGSpritesheetLoader } from "@haizor/rotmg-utils"
+import { AssetManager, AssetManagerConfig, Equipment, RotMGAssetLoader, RotMGCustomSpriteLoader, RotMGSpritesheetLoader } from "@haizor/rotmg-utils"
 import { useAppSelector } from "./app/hooks";
 import { RootState } from "./app/store";
 import Sprite from "./components/SpriteComponent";
+import DBHandler from "./DBHandler";
 
 export const AssetTypes = {
 	Players: "players",
@@ -51,10 +52,13 @@ const config: AssetManagerConfig = {
 export const Manager = new AssetManager();
 Manager.registerLoader("rotmg-loader", new RotMGAssetLoader());
 Manager.registerLoader("sprite-loader", new RotMGSpritesheetLoader());
+Manager.registerLoader("custom-sprite-loader", new RotMGCustomSpriteLoader());
 
 Sprite.setAssetManager(Manager);
 
-export const ManagerLoading = Manager.load(config);
+const db = new DBHandler(Manager);
+
+export const ManagerLoading = Promise.all([Manager.load(config),  db.load()]);
 
 export type IDSelector = (state: RootState) => number | string | undefined;
 
