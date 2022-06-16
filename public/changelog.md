@@ -1,3 +1,7 @@
+# v0.2.1
+* Equipment from the sandbox is automatically imported
+* Fixed proc chances and required status effects for procs not being considered
+
 # v0.2.0 
 * ST support
 * Ability DPS support for Traps and Shurikens
