@@ -362,7 +362,7 @@ class WeaponDPSProvider implements DPSProvider {
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
-				this.dps += damage * attack.numProjectiles ?? weapon.numProjectiles ?? 1;
+				this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
 			}
 			this.attackCountBuffer--;
 			this.attackCount++;

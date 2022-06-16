@@ -21,6 +21,10 @@
 	padding: 4px;
 }
 
+.equipmentRow > * {
+	margin-bottom: auto;
+}
+
 .statsRow {
 	display: flex;
 	align-items: center;

@@ -4,6 +4,7 @@ import styles from "./SetsDisplay.module.css"
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import { useNavigate } from "react-router-dom";
 import { getTextureForEffect } from "../util";
+import EquipmentSprite from "./EquipmentSprite";
 
 function SetsDisplay() {
 	const dispatch = useAppDispatch();
@@ -21,6 +22,7 @@ function SetDisplay({set, index}: {set: PlayerState, index: number}) {
 	const dispatch = useAppDispatch();
 	const player = getPlayerFromState(set);
 	const equipment = getEquipmentFromState(set);
+	const items = set.equipment;
 	const navigate = useNavigate();
 
 	const remove = (e: React.MouseEvent) => {
@@ -32,7 +34,7 @@ function SetDisplay({set, index}: {set: PlayerState, index: number}) {
 		<div className={styles.setDisplay + " highlightHover"} style={{border: "2px solid " + set.color}} onClick={() => navigate(`/set/${index}`)}>
 			<div className={styles.row}>
 				<SpriteComponent texture={player?.texture} size={32}></SpriteComponent>
-				{equipment.map(((equipment, equipIndex) => <SpriteComponent texture={equipment?.texture} size={32} key={equipIndex}/>))}
+				{items.map(((item, equipIndex) => <EquipmentSprite item={item} size={32} key={equipIndex} showAccuracy/>))}
 				<button className={styles.button} onClick={remove}>X</button>
 			</div>
 			<StatusEffectsDisplay set={set}/>

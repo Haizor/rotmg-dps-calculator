@@ -6,3 +6,41 @@
 	margin: 4px;
 	padding: 4px;
 }
+
+.slotContainer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.accuracyContainer {
+	position: relative;
+}
+
+.accuracySpinner {
+	width: 44px;
+	background-color: var(--background-dark-gray);
+	border: none;
+	color: white;
+	text-align: center;
+	border-radius: 8px;
+}
+
+.percent {
+	position: absolute;
+	right: 3px;
+	top: 4px;
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.accuracySpinner::-webkit-outer-spin-button,
+.accuracySpinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.accuracySpinner[type=number] {
+  -moz-appearance: textfield;
+}

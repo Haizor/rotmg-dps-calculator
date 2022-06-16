@@ -18,6 +18,7 @@ export interface PlayerState {
 
 export interface Item {
 	id: string;
+	accuracy?: number;
 }
 
 export type Indexed<T> = [number, T]
@@ -144,6 +145,13 @@ const playerSlice = createSlice({
 		disableStatusEffect: (state: PlayerState[], action: PayloadAction<Indexed<StatusEffectType>>) => {
 			const set = state[action.payload[0]];
 			set.statusEffects = set.statusEffects.filter((type) => type !== action.payload[1]);
+		},
+		setAccuracy: (state: PlayerState[], action: PayloadAction<DoubleIndexed<number>>) => {
+			const set = state[action.payload[0]];
+			const item = set.equipment[action.payload[1]];
+			const accuracy = action.payload[2];
+
+			if (item !== undefined) item.accuracy = accuracy === 100 ? undefined : accuracy;
 		}
 	}
 })
@@ -175,7 +183,8 @@ export const {
 	removeSet, 
 	setColor, 
 	setPetMagicHeal, 
+	setAccuracy,
 	enableStatusEffect, 
-	disableStatusEffect 
+	disableStatusEffect,
 } = playerSlice.actions;
 export default playerSlice.reducer;

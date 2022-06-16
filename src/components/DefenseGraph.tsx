@@ -73,7 +73,6 @@ function updateData(sets: PlayerState[], data: Data) {
 		}
 		const hash = objectHash(state, hashOptions);
 		if (hash !== (data.datasets[index] as any).hash) {
-			console.log(index)
 			const dps = new DPSCalculator(state);
 			data.datasets[index].data = dps.getDPS();
 			(data.datasets[index] as any).hash = hash;

@@ -1,3 +1,6 @@
+# v0.2.2
+* Added "% of shots hit" modifier to weapons
+
 # v0.2.1
 * Equipment from the sandbox is automatically imported
 * Fixed proc chances and required status effects for procs not being considered
