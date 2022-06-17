@@ -202,11 +202,15 @@ class Tooltip extends Component<any, {tooltipData: TooltipData | undefined}> {
 		const { tooltipData } = this.state;
 
 		const categoryMapper = (dataset: Dataset, def: number) => {
-			return Object.entries(dataset.categories[def]).sort((a, b) => b[1] - a[1]).map(([name, value]) => (
-				<div key={name}>
+			return Object.entries(dataset.categories[def]).sort((a, b) => b[1] - a[1]).map(([name, value]) => {
+				if (value === 0) {
+					return null;
+				}
+
+				return <div key={name}>
 					{name}: {Math.floor(value)}
 				</div>
-			))
+			})
 		}
 
 		const tooltip = tooltipData === undefined ? null : createPortal((
