@@ -1,0 +1,27 @@
+.tooltip {
+	position: absolute;
+	background-color: black;
+	border-radius: 4px;
+
+	pointer-events: none;
+}
+
+.tooltipSet {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+
+	border: 2px solid white;
+	padding: 4px;
+	font-size: 14px;
+	margin: 4px;
+}
+
+.tooltipDefense {
+	display: flex;
+	flex-direction: row;
+	width: 100%;
+	justify-content: center;
+
+	border-bottom: 1px solid white;
+}

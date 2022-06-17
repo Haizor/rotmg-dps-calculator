@@ -230,6 +230,13 @@ function processProcs(key: ProcNames, data: ProcDatas, equipment: (Equipment | u
 	}
 }
 
+type DPSData = {
+	categorized: {
+		[key: string]: number;
+	}
+	total: number;
+}
+
 export default class DPSCalculator {
 	state: PlayerState;
 	simulationTime: number = 20;
@@ -241,7 +248,7 @@ export default class DPSCalculator {
 		this.state = state;
 	}
 
-	getDPS() {
+	getDPS(): DPSData[] {
 		const player = getPlayerFromState(this.state);
 
 		if (player === undefined) return [];
@@ -250,6 +257,7 @@ export default class DPSCalculator {
 		for (let def = this.minDef; def <= this.maxDef; def += (this.maxDef - this.minDef) / this.simulationCount) {
 			dps[def] = (this.simulate(def));
 		}
+
 		return dps;
 	}
 
@@ -274,7 +282,7 @@ export default class DPSCalculator {
 		}
 	}
 
-	simulate(def: number): number {
+	simulate(def: number): DPSData {
 		let providers = this.getProviders();
 		let loopProviders = providers;
 		let statsMap = this.getStatsMap()
@@ -287,7 +295,18 @@ export default class DPSCalculator {
 			addQueue.push(provider);
 		}
 
-		let dps = 0; 
+		let data: DPSData = {
+			total: 0,
+			categorized: {}
+		}
+
+		const addToCategory = (name: string, value: number) => {
+			if (!data.categorized[name]) {
+				data.categorized[name] = 0;
+			}
+
+			data.categorized[name] += value / this.simulationTime;
+		}
 
 		for (let time = 0; time < this.simulationTime; time += 0.2) {
 			loopProviders = loopProviders.filter((provider) => {
@@ -299,7 +318,9 @@ export default class DPSCalculator {
 					timedBuffs,
 					statusEffects
 				})) {
-					dps += provider.getResult();
+					const result = provider.getResult();
+					data.total += result;
+					addToCategory(provider.getName(), result);
 					return false;
 				}
 				return true;
@@ -311,7 +332,15 @@ export default class DPSCalculator {
 			addQueue = [];
 		}
 
-		return loopProviders.reduce((prev, curr) => prev + curr.getResult(), dps) / this.simulationTime;
+		for (const provider of loopProviders) {
+			const result = provider.getResult();
+			data.total += result;
+			addToCategory(provider.getName(), result);
+		}
+
+		data.total /= this.simulationTime;
+
+		return data;
 	}
 }
 
@@ -319,6 +348,7 @@ export default class DPSCalculator {
 export interface DPSProvider {
 	simulate(data: DPSProviderOptions): boolean;
 	getResult(): number;
+	getName(): string;
 }
 
 type DPSProviderOptions = {
@@ -387,6 +417,10 @@ class WeaponDPSProvider implements DPSProvider {
 	getResult(): number {
 		return this.dps;
 	}
+
+	getName(): string {
+		return this.equipment[0]?.getDisplayName() ?? "Weapon"
+	}
 }
 
 const mpRatio = 0.012;
@@ -444,6 +478,10 @@ class AbilityDPSProvider implements DPSProvider {
 	getResult(): number {
 		return 0;
 	}
+
+	getName(): string {
+		return this.equipment[1]?.getDisplayName() ?? "Ability";
+	}
 }
 
 const NormalStats: Stats = new Stats();
@@ -463,6 +501,10 @@ export abstract class ActivateProvider<T> implements DPSProvider {
 
 	getResult(): number {
 		return this.dps;
+	}
+
+	getName(): string {
+		return this.equip.getDisplayName();
 	}
 }
 
