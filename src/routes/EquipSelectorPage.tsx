@@ -30,7 +30,7 @@ function EquipSelectorPage() {
 	}
 
 	const equips = [(
-		<div className={styles.remove + " highlightHover"} onClick={() => {dispatch(setEquipment([index, equipIndex, undefined])); navigate(-1)}}>
+		<div key={"none"} className={styles.remove + " highlightHover"} onClick={() => {dispatch(setEquipment([index, equipIndex, undefined])); navigate(-1)}}>
 			❌
 		</div>
 	), ...Manager.getAll<Equipment>(AssetTypes.Equipment).filter((eq => eq.slotType === player.slotTypes[equipIndex])).map((eq) => 

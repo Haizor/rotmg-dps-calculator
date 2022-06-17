@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "../app/hooks";
 import EquipmentSprite from "./EquipmentSprite";
 import { ChangeEvent } from "react";
 import { setAccuracy } from "../features/player/setsSlice";
+import PercentInput from "./PercentInput";
 
 export interface EquipmentSlotProps {
 	setIndex: number;
@@ -19,9 +20,7 @@ export const EquipmentSlot = ({setIndex, equipIndex, className}: EquipmentSlotPr
 	const equip = getEquipment(item?.id ?? "");
 	const dispatch = useAppDispatch();
 
-	const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-		let accuracy: number = Math.max(0, Math.min(e.target.valueAsNumber, 100));
-
+	const accuracyChange = (accuracy: number) => {
 		dispatch(setAccuracy([setIndex, equipIndex, accuracy]))
 	}
 
@@ -35,9 +34,9 @@ export const EquipmentSlot = ({setIndex, equipIndex, className}: EquipmentSlotPr
 			}
 			</Link>
 			{equip !== undefined && equip.isWeapon() && (
+				
 				<div className={styles.accuracyContainer}>
-					<input type="number" min={0} max={100} className={styles.accuracySpinner} value={item?.accuracy ?? 100} onChange={onChange} />
-					<div className={styles.percent}>%</div>
+					<PercentInput className={styles.accuracySpinner} value={item?.accuracy ?? 100} onChange={accuracyChange}/>
 				</div>
 			)}
 		</div>
