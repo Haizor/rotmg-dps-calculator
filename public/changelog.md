@@ -1,3 +1,8 @@
+# v0.2.3
+* Added custom tooltip for graph points that shows how much each DPS source contributes
+* Fixed accuracy input display
+* Added accuracy to abilities 
+
 # v0.2.2
 * Added "% of shots hit" modifier to weapons
 

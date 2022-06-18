@@ -18,7 +18,7 @@ function EquipmentSprite({ item, size, className, showAccuracy }: Props) {
 	return (
 		<div className={className} style={{position: "relative"}}>
 			<SpriteComponent texture={equipment?.texture} size={size} />
-			{showAccuracy && item.accuracy && (
+			{showAccuracy && item.accuracy !== undefined && (
 				<div className={styles.accuracy}>{item.accuracy}%</div>
 			)}
 		</div>

@@ -1,6 +1,6 @@
 import { Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
-import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, PlayerState } from "../features/player/setsSlice";
+import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, Item, PlayerState, PossibleItem } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
 
 type StatsMap = {
@@ -157,7 +157,7 @@ const mpHealToWis: any = {
     100: 750.0
 }
 
-function getStats( map: StatsMap) {
+function getStats(map: StatsMap) {
 	return Object.values(map).reduce((prev, curr) => {
 		return prev.add(curr);
 	}, new Stats())
@@ -198,7 +198,7 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 	}
 }
 
-function processProcs(key: ProcNames, data: ProcDatas, equipment: (Equipment | undefined)[], options: DPSProviderOptions) {
+function processProcs(key: ProcNames, data: ProcDatas, items: PossibleItem[], equipment: (Equipment | undefined)[], options: DPSProviderOptions) {
 	for (let equipIndex in equipment) {
 		const equip = equipment[equipIndex];
 		if (equip === undefined) continue;
@@ -223,7 +223,7 @@ function processProcs(key: ProcNames, data: ProcDatas, equipment: (Equipment | u
 			const providerConstructor = ActivateProviders[proc.getName()];
 			if (providerConstructor === undefined) continue;
 			
-			options.addProvider(new providerConstructor(equip, proc));
+			options.addProvider(new providerConstructor(items[equipIndex], equip, proc));
 			localData.cooldown = proc.cooldown
 			localData.count--;
 		}
@@ -388,7 +388,7 @@ class WeaponDPSProvider implements DPSProvider {
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
 		while (this.attackCountBuffer >= 1) {
-			processProcs("onShootProcs", this.procDatas, this.equipment, options);
+			processProcs("onShootProcs", this.procDatas, this.state.equipment, this.equipment, options);
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
@@ -456,12 +456,10 @@ class AbilityDPSProvider implements DPSProvider {
 
 		while (this.abilityUses > 0 && this.mana > mpCost) {
 			this.useAbility(data, ability);
-			processProcs("abilityProcs", this.procCooldowns, this.equipment, data);
+			processProcs("abilityProcs", this.procCooldowns, this.state.equipment, this.equipment, data);
 			this.abilityUses--;
 			this.mana -= mpCost;
 		}
-
-
 
 		return true;
 	}
@@ -471,7 +469,7 @@ class AbilityDPSProvider implements DPSProvider {
 			const providerConstructor = ActivateProviders[activate.getName()];
 			if (providerConstructor === undefined) continue;
 
-			data.addProvider(new providerConstructor(ability, activate));
+			data.addProvider(new providerConstructor(this.state.equipment[1] as Item, ability, activate));
 		}
 	}
 
@@ -489,10 +487,12 @@ NormalStats.atk = 50;
 
 export abstract class ActivateProvider<T> implements DPSProvider {
 	activate: T;
+	item: PossibleItem;
 	equip: Equipment;
 	dps: number = 0;
 
-	constructor(equip: Equipment, activate: T) {
+	constructor(item: PossibleItem, equip: Equipment, activate: T) {
+		this.item = item; 
 		this.equip = equip;
 		this.activate = activate;
 	}
@@ -500,7 +500,7 @@ export abstract class ActivateProvider<T> implements DPSProvider {
 	abstract simulate(data: DPSProviderOptions): boolean;
 
 	getResult(): number {
-		return this.dps;
+		return Math.floor(this.dps * (this.item?.accuracy ?? 100) / 100);
 	}
 
 	getName(): string {
@@ -514,10 +514,6 @@ export abstract class OneTimeActivateProvider<T> extends ActivateProvider<T> {
 	simulate(data: DPSProviderOptions): boolean {
 		this.run(data);
 		return false;
-	}
-
-	getResult(): number {
-		return this.dps;
 	}
 }
 
@@ -540,8 +536,8 @@ class BulletNovaProvider extends OneTimeActivateProvider<BulletNova> {
 class BulletCreateProvider extends OneTimeActivateProvider<BulletCreate> {
 	proj: Projectile | undefined;
 
-	constructor(equip: Equipment, activate: BulletCreate) {
-		super(equip, activate);
+	constructor(item: PossibleItem, equip: Equipment, activate: BulletCreate) {
+		super(item, equip, activate);
 		if (activate.type !== undefined) {
 			const procEquip = Manager.get<Equipment>(AssetTypes.Equipment, activate.type)?.value;
 			if (procEquip !== undefined) {
@@ -626,7 +622,7 @@ class ConditionEffectProvider extends OneTimeActivateProvider<ConditionEffectSel
 }
 
 
-const ActivateProviders: {[key: string]: new (equip: Equipment, proc: any) => DPSProvider} = {
+const ActivateProviders: {[key: string]: new (item: PossibleItem, equip: Equipment, proc: any) => DPSProvider} = {
 	"Shoot": ShootProvider,
 	"ShurikenAbility": ShootProvider,
 	"BulletCreate": BulletCreateProvider,

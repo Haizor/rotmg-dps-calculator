@@ -33,13 +33,13 @@ export const EquipmentSlot = ({setIndex, equipIndex, className}: EquipmentSlotPr
 				</TooltipProvider>
 			}
 			</Link>
-			{equip !== undefined && equip.isWeapon() && (
-				
+			{equip !== undefined && (equip.isAbility() || equip.isWeapon()) && (
 				<div className={styles.accuracyContainer}>
 					<PercentInput className={styles.accuracySpinner} value={item?.accuracy ?? 100} onChange={accuracyChange}/>
 				</div>
 			)}
 		</div>
-
 	)
 }
+
+
