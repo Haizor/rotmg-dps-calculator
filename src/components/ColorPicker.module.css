@@ -3,6 +3,7 @@
 	height: 48px;
 	border-radius: 8px;
 	margin: 4px;
+	cursor: pointer;
 }
 
 .colorPicker {
@@ -16,6 +17,7 @@
 	border-color: transparent;
 	box-shadow: none;
 	width: 300px;
+	cursor: auto;
 }
 
 .colorPicker label {
