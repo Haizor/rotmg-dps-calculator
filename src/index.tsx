@@ -10,6 +10,7 @@ import SetPage from './routes/SetPage';
 import EquipSelectorPage from './routes/EquipSelectorPage';
 import PlayerSelectorPage from './routes/PlayerSelectorPage';
 import { ChangelogPage } from './routes/ChangelogPage';
+import { HelpPage } from './routes/HelpPage';
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
@@ -25,6 +26,7 @@ root.render(
 							<Route path="player" element={ <PlayerSelectorPage /> } />
 						</Route>
 						<Route path="changelog" element={ <ChangelogPage /> } />
+						<Route path="help" element={ <HelpPage />} />
 					</Route>
 				</Routes>
 			</MemoryRouter>
