@@ -108,7 +108,7 @@ export default class Tooltip extends React.Component<Props, State> {
 
 	renderSubAttacks() {
 		const { subAttacks, projectiles } = this.getItemData();
-		if (subAttacks.length <= 0) return null;
+		if (subAttacks.length <= 1) return null;
 
 		return (
 			<>
@@ -339,7 +339,7 @@ export default class Tooltip extends React.Component<Props, State> {
 					<div>
 						{this.getItemData().activates.map((activate, index) => <div key={index}>{this.renderActivate(activate)}</div>)}
 					</div>
-					{this.getItemData().subAttacks.length === 0 && 
+					{this.getItemData().subAttacks.length <= 1 && 
 						<>
 							{this.getItemData().numProjectiles !== 1 && this.renderProperty("Shots", this.getItemData().numProjectiles)}
 							{this.renderProperty("Range", this.getItemData().getRange())}

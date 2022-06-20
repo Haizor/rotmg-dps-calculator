@@ -375,7 +375,7 @@ class WeaponDPSProvider implements DPSProvider {
 	}
 
 	simulate(options: DPSProviderOptions): boolean {
-		const { elapsed, def, statsMap } = options;
+		const { elapsed, def, statsMap, addProvider } = options;
 		const weapon = this.equipment[0];
 
 		if (weapon === undefined || !(weapon.hasProjectiles())) return false;
@@ -393,6 +393,10 @@ class WeaponDPSProvider implements DPSProvider {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
 				this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
+
+				if (projectile.conditionEffect !== undefined && projectile.conditionEffect.type === StatusEffectType.Bleeding) {
+					addProvider(new BleedEffectProvider(this.state.equipment[0] as Item, 3, 100))
+				}
 			}
 			this.attackCountBuffer--;
 			this.attackCount++;
@@ -618,6 +622,30 @@ class ConditionEffectProvider extends OneTimeActivateProvider<ConditionEffectSel
 				if (index !== -1) delete data.statusEffects[index]
 			}
 		}, this.activate.duration)
+	}
+}
+
+class BleedEffectProvider implements DPSProvider {
+	duration: number;
+	damage: number;
+	item: Item;
+
+	constructor(item: Item, duration: number, damage: number) {
+		this.item = item;
+		this.duration = duration;
+		this.damage = damage;
+	}
+
+	simulate(data: DPSProviderOptions): boolean {
+		return false;
+	}
+
+	getResult(): number {
+		return Math.floor(this.damage * ((this.item.accuracy ?? 100) / 100));
+	}
+
+	getName(): string {
+		return "Bleed";
 	}
 }
 
