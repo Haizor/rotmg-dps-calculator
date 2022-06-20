@@ -176,8 +176,11 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 	}
 
 	if (projectile.armorPiercing) {
-		damage = (projectile.maxDamage + projectile.minDamage) / 2;
+		damage = stats.getAttackDamage((projectile.maxDamage + projectile.minDamage) / 2);
 		if (hasStatusEffect(statusEffects, StatusEffectType.Curse)) {
+			damage *= 1.25;
+		}
+		if (hasStatusEffect(statusEffects, StatusEffectType.Damaging)) {
 			damage *= 1.25;
 		}
 		return damage
@@ -239,8 +242,9 @@ type DPSData = {
 
 export default class DPSCalculator {
 	state: PlayerState;
-	simulationTime: number = 20;
+	simulationTime: number = 10;
 	simulationCount: number = 20;
+	simulationStep: number = 0.2;
 	minDef: number = 0;
 	maxDef: number = 100;
 
@@ -308,10 +312,10 @@ export default class DPSCalculator {
 			data.categorized[name] += value / this.simulationTime;
 		}
 
-		for (let time = 0; time < this.simulationTime; time += 0.2) {
+		for (let time = 0; time < this.simulationTime; time += this.simulationStep) {
 			loopProviders = loopProviders.filter((provider) => {
 				if (!provider.simulate({
-					elapsed: 0.2,
+					elapsed: this.simulationStep,
 					def,
 					addProvider,
 					statsMap,
@@ -326,7 +330,7 @@ export default class DPSCalculator {
 				return true;
 			})
 
-			timedBuffs.tick(0.2);
+			timedBuffs.tick(this.simulationStep);
 
 			loopProviders = [...loopProviders, ...addQueue];
 			addQueue = [];
