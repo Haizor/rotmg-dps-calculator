@@ -23,12 +23,17 @@ type State = {
 	scale: number;
 }
 
+type StarLines = {
+	[key: string]: boolean[]
+}
+
 type ActivateRendererTextType = "normal" | "value" | "wis" | "linebreak"
 type ActivateRendererText = { text?: string, type: ActivateRendererTextType, noMarginLeft?: boolean, noMarginRight?: boolean } | string
 type ActivateRenderer<T> = (activate: T, player: Player | undefined) => ActivateRendererText[]
 
 export default class Tooltip extends React.Component<Props, State> {
 	static activateRenderers: Map<string, ActivateRenderer<any>> = new Map();
+	static starLines: StarLines = {};
 
 	tooltipDiv: React.RefObject<HTMLDivElement>
 
@@ -202,19 +207,26 @@ export default class Tooltip extends React.Component<Props, State> {
 		})
 	}
 
-	renderProperty(name: string | undefined, value: any) {
+	renderProperty(name: string | undefined, value: any, star: boolean = false) {
 		if (value === undefined) return;
 
 		return <div className={styles.propertyLine}>
 			{name !== undefined && name !== "" && 
-				<div className={styles.propertyName}>
-					{name}:
-				</div>
+				<>
+					<div className={styles.propertyName}>
+						{name}:
+					</div>
+					{star && <SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType.Stunned)}/>}
+				</>
+
 			}
+
 
 			<div className={styles.propertyValue}>
 				{value}
+				{star && name === undefined && <SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType.Stunned)}/>}
 			</div>
+
 		</div>
 	}
 
@@ -334,7 +346,11 @@ export default class Tooltip extends React.Component<Props, State> {
 					<div className={styles.splitter} style={{backgroundColor: this.getColor()}} />
 					{this.renderSubAttacks()}
 					<div>
-						{this.getItemData().extraTooltipData.map((info, index) => <div key={index}>{this.renderProperty(info.name, info.description)}</div>)}
+						{this.getItemData().extraTooltipData.map((info, index) => (
+							<div key={index}>
+								{this.renderProperty(info.name, info.description, Tooltip.starLines[this.getItemData().id] !== undefined && Tooltip.starLines[this.getItemData().id][index])}
+							</div>
+						))}
 					</div>
 					<div>
 						{this.getItemData().activates.map((activate, index) => <div key={index}>{this.renderActivate(activate)}</div>)}
@@ -543,4 +559,21 @@ Tooltip.activateRenderers.set("VampireBlast", (activate: VampireBlast, player: P
 
 function isProjectileAbility(data: Equipment) {
 	return data.activates.findIndex(a => a.getName() === "Shoot" || a.getName() === "BulletCreate" || a.getName() === "ShurikenAbility") !== -1;
+}
+
+Tooltip.starLines = {
+	"Oryx's Escutcheon": [ true ],
+	"Divinity": [ true ],
+	"Exalted God's Horn": [ true ],
+	"Vesture of Duality": [ true ],
+	"Primal Arcana": [ true ],
+	"Elemental Equilibrium": [ true ],
+	"Collector's Monocle": [ true ],
+	"2ArcherST1": [ true ],
+	"2RogueST0": [ true ],
+	"Sporous Spray Spell": [ true ],
+	"Genesis Spell": [ true ],
+	"Chaotic Scripture": [ true ],
+	"The Twilight Gemstone": [ true ],
+	"Robe of the Mad Scientist": [ true ]
 }

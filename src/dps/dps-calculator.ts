@@ -1,4 +1,4 @@
-import { Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
+import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, Item, PlayerState, PossibleItem } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -163,9 +163,16 @@ function getStats(map: StatsMap) {
 	}, new Stats())
 }
 
-function getAverageDamage(statusEffects: StatusEffectType[], projectile: Projectile, stats: Stats, def: number) {
+type DamageData = {
+	minDamage?: number;
+	maxDamage?: number;
+	armorPiercing: boolean;
+}
+
+function getAverageDamage(statusEffects: StatusEffectType[], data: DamageData, stats: Stats, def: number) {
 	let damage = 0;
-	if (projectile.minDamage === undefined || projectile.maxDamage === undefined) return projectile.minDamage ?? projectile.maxDamage ?? 0;
+	if (data.minDamage === undefined || data.maxDamage === undefined) return data.minDamage ?? data.maxDamage ?? 0;
+	if (data.minDamage === 0 && data.maxDamage === 0) return 0;
 
 	if (hasStatusEffect(statusEffects, StatusEffectType["Armor Broken"])) {
 		def = 0;
@@ -175,8 +182,8 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 		def -= 20;
 	}
 
-	if (projectile.armorPiercing) {
-		damage = stats.getAttackDamage((projectile.maxDamage + projectile.minDamage) / 2);
+	if (data.armorPiercing) {
+		damage = stats.getAttackDamage((data.minDamage + (data.maxDamage - 1)) / 2);
 		if (hasStatusEffect(statusEffects, StatusEffectType.Curse)) {
 			damage *= 1.25;
 		}
@@ -185,7 +192,7 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 		}
 		return damage
 	} else {
-		for (let i = projectile.minDamage; i < projectile.maxDamage; i++) {
+		for (let i = data.minDamage; i <= data.maxDamage; i++) {
 			let base = stats.getAttackDamage(i);
 			if (hasStatusEffect(statusEffects, StatusEffectType.Damaging)) {
 				base *= 1.25;
@@ -197,7 +204,7 @@ function getAverageDamage(statusEffects: StatusEffectType[], projectile: Project
 			damage += localDamage;
 		}
 		
-		return damage / (projectile.maxDamage - projectile.minDamage);
+		return damage / Math.max(((data.maxDamage - 1) - data.minDamage), 1);
 	}
 }
 
@@ -210,6 +217,25 @@ function processProcs(key: ProcNames, data: ProcDatas, items: PossibleItem[], eq
 
 			if (proc.requiredConditions !== StatusEffectType.Nothing) {
 				if (options.statusEffects.indexOf(proc.requiredConditions) === -1) continue;
+			}
+
+			if (proc.mustNotWear !== undefined) {
+				for (const equip of equipment) {
+					if (equip !== undefined && equip.type === proc.mustNotWear) {
+						continue;
+					}
+				}
+			}
+
+			if (proc.mustWear !== undefined) {
+				let equipped = false;
+				for (const equip of equipment) {
+					if (equip !== undefined && equip.type === proc.mustWear) {
+						equipped = true;
+						break;
+					}
+				}
+				if (!equipped) continue;
 			}
 
 			const localData = data[`${equipIndex},${procIndex}`] ?? {
@@ -229,6 +255,8 @@ function processProcs(key: ProcNames, data: ProcDatas, items: PossibleItem[], eq
 			options.addProvider(new providerConstructor(items[equipIndex], equip, proc));
 			localData.cooldown = proc.cooldown
 			localData.count--;
+
+			data[`${equipIndex},${procIndex}`] = localData;
 		}
 	}
 }
@@ -294,6 +322,7 @@ export default class DPSCalculator {
 		let addQueue: DPSProvider[] = [];
 		let timedBuffs: TimedBuffs = new TimedBuffs();
 		let statusEffects: StatusEffectType[] = [];
+		let procDatas: ProcDatas = {};
 
 		const addProvider = (provider: DPSProvider) => {
 			addQueue.push(provider);
@@ -320,7 +349,8 @@ export default class DPSCalculator {
 					addProvider,
 					statsMap,
 					timedBuffs,
-					statusEffects
+					statusEffects,
+					procDatas
 				})) {
 					const result = provider.getResult();
 					data.total += result;
@@ -330,6 +360,9 @@ export default class DPSCalculator {
 				return true;
 			})
 
+			for (const key of Object.keys(procDatas)) {
+				procDatas[key].cooldown -= this.simulationStep;
+			}
 			timedBuffs.tick(this.simulationStep);
 
 			loopProviders = [...loopProviders, ...addQueue];
@@ -362,6 +395,7 @@ type DPSProviderOptions = {
 	statsMap: StatsMap;
 	timedBuffs: TimedBuffs;
 	statusEffects: StatusEffectType[];
+	procDatas: ProcDatas;
 }
 
 class WeaponDPSProvider implements DPSProvider {
@@ -371,15 +405,13 @@ class WeaponDPSProvider implements DPSProvider {
 	attackCountBuffer: number = 0;
 	attackCount: number = 0;
 
-	procDatas: ProcDatas = {};
-
 	constructor(state: PlayerState) {
 		this.state = state;
 		this.equipment = getEquipmentFromState(state);
 	}
 
 	simulate(options: DPSProviderOptions): boolean {
-		const { elapsed, def, statsMap, addProvider } = options;
+		const { elapsed, def, statsMap, procDatas, addProvider } = options;
 		const weapon = this.equipment[0];
 
 		if (weapon === undefined || !(weapon.hasProjectiles())) return false;
@@ -392,7 +424,7 @@ class WeaponDPSProvider implements DPSProvider {
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
 		while (this.attackCountBuffer >= 1) {
-			processProcs("onShootProcs", this.procDatas, this.state.equipment, this.equipment, options);
+			processProcs("onShootProcs", procDatas, this.state.equipment, this.equipment, options);
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
@@ -437,16 +469,32 @@ class AbilityDPSProvider implements DPSProvider {
 	mana: number = -1;
 	state: PlayerState;
 	equipment: (Equipment | undefined)[];
-	procCooldowns: ProcDatas = {};
 	abilityUses: number = 0;
+	mpCost: number = 0;
 
 	constructor(state: PlayerState) {
 		this.state = state;
 		this.equipment = getEquipmentFromState(state);
+		this.mpCost = this.getMpCost();
+	}
+
+	getMpCost() {
+		const ability = this.equipment[1];
+		if (ability === undefined) return 0;
+		let mpCost = ability.mpEndCost ?? ability.mpCost;
+		for (const equip of this.equipment) {
+			if (equip === undefined) continue;
+			for (const activate of equip.activateOnEquips) {
+				if (activate instanceof AbilityUseDiscount) {
+					mpCost *= activate.multiplier;
+				}
+			}
+		}
+		return mpCost;
 	}
 
 	simulate(data: DPSProviderOptions): boolean {
-		const { statsMap, elapsed } = data;
+		const { statsMap, elapsed, procDatas } = data;
 		const ability = this.equipment[1];
 
 		if (ability === undefined) return false;
@@ -457,16 +505,14 @@ class AbilityDPSProvider implements DPSProvider {
 		if (this.mana === -1) {
 			this.mana = stats.mp;
 		}
-
-		const mpCost = ability.mpEndCost ?? ability.mpCost;
 		
 		this.mana = Math.min(stats.mp, this.mana + ((stats.wis + mpHealToWis[this.state.petMagicHeal]) * mpRatio));
 
-		while (this.abilityUses > 0 && this.mana > mpCost) {
+		while (this.abilityUses > 0 && this.mana > this.mpCost) {
 			this.useAbility(data, ability);
-			processProcs("abilityProcs", this.procCooldowns, this.state.equipment, this.equipment, data);
+			processProcs("abilityProcs", procDatas, this.state.equipment, this.equipment, data);
 			this.abilityUses--;
-			this.mana -= mpCost;
+			this.mana -= this.mpCost;
 		}
 
 		return true;
@@ -516,6 +562,35 @@ export abstract class ActivateProvider<T> implements DPSProvider {
 	}
 }
 
+export abstract class TimedActivateProvider<T> extends ActivateProvider<T> {
+	uses: number = 0;
+	totalTime: number = 0;
+	
+	simulate(data: DPSProviderOptions): boolean {
+		const { elapsed } = data;
+
+		this.uses += (1 / this.getInterval()) * elapsed;
+
+		while (this.uses >= 1) {
+			this.run(data);
+			this.uses--;
+		}
+		
+		this.totalTime += elapsed;
+	
+		if (this.totalTime > this.getDuration()) {
+			return false;
+		}
+
+		return true;
+	}
+	
+	abstract run(data: DPSProviderOptions): void;
+
+	abstract getDuration(): number;
+	abstract getInterval(): number;
+}
+
 export abstract class OneTimeActivateProvider<T> extends ActivateProvider<T> {
 	abstract run(data: DPSProviderOptions): void;
 
@@ -556,8 +631,7 @@ class BulletCreateProvider extends OneTimeActivateProvider<BulletCreate> {
 
 	run(data: DPSProviderOptions): void {
 		if (this.proj === undefined) return;
-
-		this.dps += getAverageDamage([], this.proj, NormalStats, data.def);
+		this.dps += getAverageDamage(data.statusEffects, this.proj, NormalStats, data.def);
 	}
 }
 
@@ -653,6 +727,103 @@ class BleedEffectProvider implements DPSProvider {
 	}
 }
 
+class ObjectTossProvider extends OneTimeActivateProvider<ObjectToss> {
+	run(data: DPSProviderOptions): void {
+		const provider = ObjectTossProviders[this.activate.objectId];
+		if (provider !== undefined) {
+			data.addProvider(new provider(this.item, this.equip, this.activate));
+		}
+	}
+}
+
+class DivinityProvider extends OneTimeActivateProvider<ObjectToss> {
+	private static DATA: DamageData = {
+		armorPiercing: true,
+		minDamage: 600,
+		maxDamage: 800
+	}
+
+	run(data: DPSProviderOptions): void {
+		const stats = getStats(data.statsMap);
+		this.dps += getAverageDamage(data.statusEffects, DivinityProvider.DATA, stats, data.def);
+	}
+}
+
+class EscutcheonProvider extends OneTimeActivateProvider<ObjectToss> {
+	private static DATA: DamageData = {
+		armorPiercing: true,
+		minDamage: 1000,
+		maxDamage: 1200
+	}
+
+	run(data: DPSProviderOptions): void {
+		this.dps += getAverageDamage(data.statusEffects, EscutcheonProvider.DATA, NormalStats, data.def);
+	}
+}
+
+class SporousSprayProvider extends TimedActivateProvider<ObjectToss> {
+	private static DATA: DamageData = {
+		armorPiercing: false,
+		minDamage: 1000,
+		maxDamage: 1000
+	}
+
+	run(data: DPSProviderOptions): void {
+		this.dps += getAverageDamage([], SporousSprayProvider.DATA, NormalStats, data.def);
+	}
+
+	getDuration(): number {
+		return 4.8;
+	}
+
+	getInterval(): number {
+		return 1.2;
+	}
+}
+
+class GenesisSpellProvider extends TimedActivateProvider<ObjectToss> {
+	private static DATA: DamageData = {
+		armorPiercing: false,
+		minDamage: 250,
+		maxDamage: 250
+	}
+
+	run(data: DPSProviderOptions): void {
+		this.dps += getAverageDamage([], GenesisSpellProvider.DATA, NormalStats, data.def);
+	}
+
+	getDuration(): number {
+		return 4;
+	}
+
+	getInterval(): number {
+		return 0.4;
+	}
+
+}
+
+class ChaoticScriptureProvider extends OneTimeActivateProvider<ObjectToss> {
+	private static DATA: DamageData = {
+		armorPiercing: true,
+		minDamage: 1800,
+		maxDamage: 2200
+	}
+
+	run(data: DPSProviderOptions): void {
+		this.dps += getAverageDamage([], ChaoticScriptureProvider.DATA, NormalStats, data.def);
+	}
+}
+
+const ObjectTossProviders: {[key: string]: new (item: PossibleItem, equip: Equipment, proc: any) => ActivateProvider<ObjectToss>} = {
+	"Divinity Effect": DivinityProvider,
+	"Oryx's Escutcheon Effect 1": EscutcheonProvider,
+	"Killer Shroom": SporousSprayProvider,
+	"Genesis Spell Portal 1": GenesisSpellProvider,
+	"Genesis Spell Portal 2": GenesisSpellProvider,
+	"Genesis Spell Portal 3": GenesisSpellProvider,
+	"Genesis Spell Portal 4": GenesisSpellProvider,
+	"Chaotic Scripture Effect": ChaoticScriptureProvider
+}
 
 const ActivateProviders: {[key: string]: new (item: PossibleItem, equip: Equipment, proc: any) => DPSProvider} = {
 	"Shoot": ShootProvider,
@@ -665,7 +836,8 @@ const ActivateProviders: {[key: string]: new (item: PossibleItem, equip: Equipme
 	"VampireBlast": VampireBlastProvider,
 	"Trap": TrapProvider,
 	"ConditionEffectSelf": ConditionEffectProvider,
-	"ConditionEffectAura": ConditionEffectProvider
+	"ConditionEffectAura": ConditionEffectProvider,
+	"ObjectToss": ObjectTossProvider
 }
 
 export function isActivateCalculated(key: string) {

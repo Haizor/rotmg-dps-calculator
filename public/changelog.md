@@ -1,3 +1,23 @@
+# v0.3.0
+* Added support for the following items:
+	* Divinity
+	* Oryx's Escutcheon
+	* Exalted God's Horn
+	* Vesture of Duality
+	* Collector's Monocle
+	* Genesis Spell
+	* Chaotic Scripture
+	* The Twilight Gemstone
+	* Robe of the Mad Scientist
+	* Primal Arcana
+	* Elemental Equilibrium
+	* Sporous Spray Spell
+	* Embellished Quiver
+	* Soulcursed Scythe
+* Fixed armor-piercing shots not accounting for attack
+* Support for bleeding
+* Turned down simulation time. This results in slightly less accurate numbers, but should run faster for people with slow browsers.
+
 # v0.2.3
 * Added custom tooltip for graph points that shows how much each DPS source contributes
 * Fixed accuracy input display

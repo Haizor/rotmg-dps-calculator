@@ -1,10 +1,10 @@
 {
   "name": "rotmg-dps-calculator",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@haizor/rotmg-utils": "^1.1.6",
+    "@haizor/rotmg-utils": "^1.1.9",
     "@react-spring/web": "^9.4.5",
     "@reduxjs/toolkit": "^1.8.2",
     "@testing-library/jest-dom": "^5.16.4",
