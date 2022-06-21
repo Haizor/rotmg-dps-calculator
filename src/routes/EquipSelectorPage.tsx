@@ -8,6 +8,7 @@ import TooltipProvider from "../components/tooltip/TooltipProvider";
 import { getPlayerFromState, setEquipment } from "../features/player/setsSlice";
 
 import styles from "./SelectorPage.module.css";
+import { getStatsFromState } from "../dps/dps-calculator";
 
 function EquipSelectorPage() {
 	const params = useParams();
@@ -17,6 +18,8 @@ function EquipSelectorPage() {
 	const dispatch = useAppDispatch();
 
 	const set = useAppSelector(state => state.sets[index]);
+
+	const stats = getStatsFromState(set);
 
 	if (set === undefined) {
 		navigate(-1);
@@ -35,7 +38,7 @@ function EquipSelectorPage() {
 		</div>
 	), ...Manager.getAll<Equipment>(AssetTypes.Equipment).filter((eq => eq.slotType === player.slotTypes[equipIndex])).map((eq) => 
 		<div key={eq.id} className={"highlightHover"} onClick={() => {dispatch(setEquipment([index, equipIndex, { id: eq.id }])); navigate(-1)}}>
-			<TooltipProvider item={new Item(eq)}>
+			<TooltipProvider item={new Item(eq)} player={{stats}}>
 				<SpriteComponent texture={eq.texture} />
 			</TooltipProvider>
 		</div>

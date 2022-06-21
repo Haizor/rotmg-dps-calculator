@@ -5,9 +5,9 @@ import styles from "./EquipmentSlot.module.css";
 import TooltipProvider from "./tooltip/TooltipProvider";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
 import EquipmentSprite from "./EquipmentSprite";
-import { ChangeEvent } from "react";
 import { setAccuracy } from "../features/player/setsSlice";
 import PercentInput from "./PercentInput";
+import { getStatsFromState } from "../dps/dps-calculator";
 
 export interface EquipmentSlotProps {
 	setIndex: number;
@@ -16,9 +16,12 @@ export interface EquipmentSlotProps {
 }
 
 export const EquipmentSlot = ({setIndex, equipIndex, className}: EquipmentSlotProps) => {
-	const item = useAppSelector(state => state.sets[setIndex].equipment[equipIndex]);
+	const set = useAppSelector(state => state.sets[setIndex]);
+	const item = set.equipment[equipIndex];
 	const equip = getEquipment(item?.id ?? "");
 	const dispatch = useAppDispatch();
+
+	const stats = getStatsFromState(set);
 
 	const accuracyChange = (accuracy: number) => {
 		dispatch(setAccuracy([setIndex, equipIndex, accuracy]))
@@ -28,7 +31,7 @@ export const EquipmentSlot = ({setIndex, equipIndex, className}: EquipmentSlotPr
 		<div className={styles.slotContainer}>
 			<Link className={styles.slot + " highlightHover"} to={`/set/${setIndex}/equipment/${equipIndex}`}>
 			{equip !== undefined && 
-				<TooltipProvider item={new Item(equip)}>
+				<TooltipProvider item={new Item(equip)} player={{stats}}>
 					<EquipmentSprite item={item} size={32}/>
 				</TooltipProvider>
 			}

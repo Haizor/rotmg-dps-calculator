@@ -1,6 +1,6 @@
 
 import React, { CSSProperties } from "react";
-import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, EquipmentSet, HealNova, IncrementStat, Item, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
+import { Activate, BulletNova, ConditionEffectAura, ConditionEffectSelf, Decoy, EffectBlast, Equipment, EquipmentSet, HealNova, IncrementStat, Item, Lightning, PoisonGrenade, Projectile, StatBoostAura, StatNames, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { isActivateCalculated } from "../../dps/dps-calculator";
 import { getTextureForEffect } from "../../util";
 import SpriteComponent from "../SpriteComponent"
@@ -557,6 +557,28 @@ Tooltip.activateRenderers.set("VampireBlast", (activate: VampireBlast, player: P
 	]
 })
 
+Tooltip.activateRenderers.set("Lightning", (activate: Lightning, player: Player | undefined) => {
+	const wis = player?.stats.wis ?? 0;
+	const bonusDamage = activate.getBonusDamage(wis);
+	const bonusTargets = activate.getBonusTargetCount(wis);
+	const increase = activate.decrDamage < 0 ? true : false;
+	return [
+		"Lightning:",
+		{text: `${activate.getTargetCount(wis)}`, type: "value"},
+		bonusTargets !== 0 ? {text: `(+${bonusTargets})`, type: "wis"} : "",
+		"targets",
+		{type: "linebreak"},
+		{text: `${activate.getDamage(wis)}`, type: "value"},
+		bonusDamage !== 0 ? {text: `(+${bonusDamage})`, type: "wis"} : "",
+		"damage,",
+		{ text: increase ? "increased" : "decreased", type: increase ? "value" : "normal" },
+		"by",
+		{ type: "linebreak" },
+		{ text: `${Math.abs(activate.decrDamage)}`, type: "value" },
+		"for each subsequent target"
+	]
+})
+
 function isProjectileAbility(data: Equipment) {
 	return data.activates.findIndex(a => a.getName() === "Shoot" || a.getName() === "BulletCreate" || a.getName() === "ShurikenAbility") !== -1;
 }
@@ -575,5 +597,7 @@ Tooltip.starLines = {
 	"Genesis Spell": [ true ],
 	"Chaotic Scripture": [ true ],
 	"The Twilight Gemstone": [ true ],
-	"Robe of the Mad Scientist": [ true ]
+	"Robe of the Mad Scientist": [ true ],
+	"Vanguard's Visage": [ true ],
+	"AoOHelm": [ true ]
 }

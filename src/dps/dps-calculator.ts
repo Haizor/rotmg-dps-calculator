@@ -1,4 +1,4 @@
-import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
+import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, HealNova, Lightning, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, Item, PlayerState, PossibleItem } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -25,6 +25,40 @@ interface Buff {
 	onApply(): void;
 	onRemove(): void;
 }
+
+class StatusEffectManager {
+	effects: Map<StatusEffectType, number> = new Map();
+
+	addEffect(type: StatusEffectType, duration: number) {
+		if (this.effects.has(type) && duration < (this.effects.get(type) as number)) return;
+		this.effects.set(type, duration);
+	}
+
+	tick(elapsed: number) {
+		this.effects.forEach((value, key) => {
+			value -= elapsed;
+			if (value < 0) {
+				this.effects.delete(key);
+			}
+		});
+	}
+
+	getEffects(): StatusEffectType[] {
+		return [...this.effects.values()]
+	}
+
+	hasEffect(type: StatusEffectType): boolean {
+		return this.effects.has(type);
+	}
+}
+
+const EmptyEffects = new StatusEffectManager();
+
+const EnemyEffects = [
+	StatusEffectType["Armor Broken"],
+	StatusEffectType.Curse,
+	StatusEffectType.Exposed
+]
 
 class TimedBuffs {
 	buffs: {
@@ -169,36 +203,43 @@ type DamageData = {
 	armorPiercing: boolean;
 }
 
-function getAverageDamage(statusEffects: StatusEffectType[], data: DamageData, stats: Stats, def: number) {
+function getAverageDamage(playerEffects: StatusEffectManager, enemyEffects: StatusEffectManager, data: DamageData, stats: Stats, def: number) {
 	let damage = 0;
+	let weakened = playerEffects.hasEffect(StatusEffectType.Weak);
+	
 	if (data.minDamage === undefined || data.maxDamage === undefined) return data.minDamage ?? data.maxDamage ?? 0;
 	if (data.minDamage === 0 && data.maxDamage === 0) return 0;
 
-	if (hasStatusEffect(statusEffects, StatusEffectType["Armor Broken"])) {
+	if (weakened) {
+		stats = stats.add(new Stats());
+		stats.atk = 0;
+	}
+
+	if (enemyEffects.hasEffect(StatusEffectType["Armor Broken"])) {
 		def = 0;
 	}
 
-	if (hasStatusEffect(statusEffects, StatusEffectType.Exposed)) {
+	if (enemyEffects.hasEffect(StatusEffectType.Exposed)) {
 		def -= 20;
 	}
 
 	if (data.armorPiercing) {
 		damage = stats.getAttackDamage((data.minDamage + (data.maxDamage - 1)) / 2);
-		if (hasStatusEffect(statusEffects, StatusEffectType.Curse)) {
+		if (!weakened && playerEffects.hasEffect(StatusEffectType.Damaging)) {
 			damage *= 1.25;
 		}
-		if (hasStatusEffect(statusEffects, StatusEffectType.Damaging)) {
+		if (enemyEffects.hasEffect(StatusEffectType.Curse)) {
 			damage *= 1.25;
 		}
 		return damage
 	} else {
 		for (let i = data.minDamage; i <= data.maxDamage; i++) {
 			let base = stats.getAttackDamage(i);
-			if (hasStatusEffect(statusEffects, StatusEffectType.Damaging)) {
+			if (!weakened && playerEffects.hasEffect(StatusEffectType.Damaging)) {
 				base *= 1.25;
 			}
 			let localDamage = Math.max(base - def, base * 0.10);
-			if (hasStatusEffect(statusEffects, StatusEffectType.Curse)) {
+			if (enemyEffects.hasEffect(StatusEffectType.Curse)) {
 				localDamage *= 1.25;
 			}
 			damage += localDamage;
@@ -216,7 +257,7 @@ function processProcs(key: ProcNames, data: ProcDatas, items: PossibleItem[], eq
 			const proc = equip[key][procIndex] as (Proc & Activate);
 
 			if (proc.requiredConditions !== StatusEffectType.Nothing) {
-				if (options.statusEffects.indexOf(proc.requiredConditions) === -1) continue;
+				if (options.playerEffects.hasEffect(proc.requiredConditions)) continue;
 			}
 
 			if (proc.mustNotWear !== undefined) {
@@ -261,6 +302,19 @@ function processProcs(key: ProcNames, data: ProcDatas, items: PossibleItem[], eq
 	}
 }
 
+export function getStatsFromState(state: PlayerState) {
+	const equipment = getEquipmentFromState(state);
+	const base = equipment.reduce(((prev, curr) => {
+		if (curr === undefined) {
+			return prev;
+		}
+		return prev.add(curr.stats)
+	}), basicToFullStats(state.stats));
+	const set = EquipmentSet.getTotalStatsForSets(equipment)
+
+	return base.add(set);
+}
+
 type DPSData = {
 	categorized: {
 		[key: string]: number;
@@ -301,16 +355,8 @@ export default class DPSCalculator {
 	}
 
 	getStatsMap(): StatsMap {
-		const equipment = getEquipmentFromState(this.state);
-
 		return {
-			base: equipment.reduce(((prev, curr) => {
-				if (curr === undefined) {
-					return prev;
-				}
-				return prev.add(curr.stats)
-			}), basicToFullStats(this.state.stats)),
-			set: EquipmentSet.getTotalStatsForSets(equipment)
+			base: getStatsFromState(this.state)
 		}
 	}
 
@@ -321,7 +367,17 @@ export default class DPSCalculator {
 
 		let addQueue: DPSProvider[] = [];
 		let timedBuffs: TimedBuffs = new TimedBuffs();
-		let statusEffects: StatusEffectType[] = [];
+		let playerEffects = new StatusEffectManager();
+		let enemyEffects = new StatusEffectManager();
+
+		for (const effect of this.state.statusEffects) {
+			if (EnemyEffects.includes(effect)) {
+				enemyEffects.addEffect(effect, 10000);
+			} else {
+				playerEffects.addEffect(effect, 10000);
+			}
+		}
+
 		let procDatas: ProcDatas = {};
 
 		const addProvider = (provider: DPSProvider) => {
@@ -349,7 +405,8 @@ export default class DPSCalculator {
 					addProvider,
 					statsMap,
 					timedBuffs,
-					statusEffects,
+					playerEffects,
+					enemyEffects,
 					procDatas
 				})) {
 					const result = provider.getResult();
@@ -364,6 +421,9 @@ export default class DPSCalculator {
 				procDatas[key].cooldown -= this.simulationStep;
 			}
 			timedBuffs.tick(this.simulationStep);
+
+			playerEffects.tick(this.simulationStep);
+			enemyEffects.tick(this.simulationStep);
 
 			loopProviders = [...loopProviders, ...addQueue];
 			addQueue = [];
@@ -394,7 +454,8 @@ type DPSProviderOptions = {
 	addProvider: (provider: DPSProvider) => void;
 	statsMap: StatsMap;
 	timedBuffs: TimedBuffs;
-	statusEffects: StatusEffectType[];
+	playerEffects: StatusEffectManager;
+	enemyEffects: StatusEffectManager;
 	procDatas: ProcDatas;
 }
 
@@ -411,15 +472,19 @@ class WeaponDPSProvider implements DPSProvider {
 	}
 
 	simulate(options: DPSProviderOptions): boolean {
-		const { elapsed, def, statsMap, procDatas, addProvider } = options;
+		if (this.state.equipment[0] === undefined || this.state.equipment[0].accuracy === 0) return false;
+
 		const weapon = this.equipment[0];
 
 		if (weapon === undefined || !(weapon.hasProjectiles())) return false;
 
+		const { elapsed, def, statsMap, procDatas, addProvider, playerEffects, enemyEffects } = options;
+
 		const stats = getStats(statsMap);
-		let attacksPerSecond = this.getAttacksPerSecond(weapon, stats);
+		let attacksPerSecond = this.getAttacksPerSecond(weapon, stats, playerEffects);
 		
-		this.attackCountBuffer += elapsed * attacksPerSecond;
+		if (!options.playerEffects.hasEffect(StatusEffectType.Stunned))
+			this.attackCountBuffer += elapsed * attacksPerSecond;
 		
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
@@ -427,8 +492,11 @@ class WeaponDPSProvider implements DPSProvider {
 			processProcs("onShootProcs", procDatas, this.state.equipment, this.equipment, options);
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
-				const damage = getAverageDamage(this.state.statusEffects, projectile, stats, def);
+				const damage = getAverageDamage(playerEffects, enemyEffects, projectile, stats, def);
 				this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
+				if (projectile.conditionEffect !== undefined) {
+					playerEffects.addEffect(projectile.conditionEffect.type, projectile.conditionEffect.duration);
+				}
 
 				if (projectile.conditionEffect !== undefined && projectile.conditionEffect.type === StatusEffectType.Bleeding) {
 					addProvider(new BleedEffectProvider(this.state.equipment[0] as Item, 3, 100))
@@ -441,11 +509,12 @@ class WeaponDPSProvider implements DPSProvider {
 		return true;
 	}
 
-	getAttacksPerSecond(weapon: Equipment, stats: Stats): number {
+	getAttacksPerSecond(weapon: Equipment, stats: Stats, effects: StatusEffectManager): number {
 		let aps = 0;
-		if (hasStatusEffect(this.state.statusEffects, StatusEffectType.Dazed)) aps = 1.5;
-		aps = stats.getAttacksPerSecond() * (hasStatusEffect(this.state.statusEffects, StatusEffectType.Berserk) ? 1.25 : 1) * weapon.rateOfFire;
-
+	
+		aps = stats.getAttacksPerSecond() * (effects.hasEffect(StatusEffectType.Berserk) ? 1.25 : 1);
+		if (effects.hasEffect(StatusEffectType.Dazed)) aps = 1.5;
+		aps *= weapon.rateOfFire;
 		if (weapon.burstCount === undefined || weapon.burstDelay === undefined || weapon.burstMinDelay === undefined) return aps;
 
 		const currBurstDelay = Math.min(Math.max(weapon.burstDelay - ((weapon.burstDelay - weapon.burstMinDelay) / 100 * stats.dex), weapon.burstMinDelay), weapon.burstDelay);
@@ -494,6 +563,8 @@ class AbilityDPSProvider implements DPSProvider {
 	}
 
 	simulate(data: DPSProviderOptions): boolean {
+		if (this.state.equipment[1] === undefined || this.state.equipment[1].accuracy === 0) return false;
+
 		const { statsMap, elapsed, procDatas } = data;
 		const ability = this.equipment[1];
 
@@ -537,7 +608,7 @@ class AbilityDPSProvider implements DPSProvider {
 }
 
 const NormalStats: Stats = new Stats();
-NormalStats.atk = 50;
+NormalStats.atk = 25;
 
 export abstract class ActivateProvider<T> implements DPSProvider {
 	activate: T;
@@ -602,8 +673,12 @@ export abstract class OneTimeActivateProvider<T> extends ActivateProvider<T> {
 
 class ShootProvider extends OneTimeActivateProvider<Shoot> {
 	run(data: DPSProviderOptions): void {
+		const projectile = this.equip.projectiles[0];
 		for (let i = 0; i < this.equip.numProjectiles; i++) {
-			this.dps += getAverageDamage([], this.equip.projectiles[0], NormalStats, data.def);
+			this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, projectile, NormalStats, data.def);
+			if (projectile.conditionEffect !== undefined) {
+				data.enemyEffects.addEffect(projectile.conditionEffect.type, projectile.conditionEffect.duration);
+			}
 		}
 	}
 }
@@ -611,7 +686,7 @@ class ShootProvider extends OneTimeActivateProvider<Shoot> {
 class BulletNovaProvider extends OneTimeActivateProvider<BulletNova> {
 	run(data: DPSProviderOptions): void {
 		for (let i = 0; i < this.activate.numShots; i++) {
-			this.dps += getAverageDamage([], this.equip.projectiles[0], NormalStats, data.def);
+			this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, this.equip.projectiles[0], NormalStats, data.def);
 		}
 	}
 }
@@ -631,7 +706,10 @@ class BulletCreateProvider extends OneTimeActivateProvider<BulletCreate> {
 
 	run(data: DPSProviderOptions): void {
 		if (this.proj === undefined) return;
-		this.dps += getAverageDamage(data.statusEffects, this.proj, NormalStats, data.def);
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, this.proj, NormalStats, data.def);
+		if (this.proj.conditionEffect !== undefined) {
+			data.enemyEffects.addEffect(this.proj.conditionEffect.type, this.proj.conditionEffect.duration);
+		}
 	}
 }
 
@@ -653,7 +731,12 @@ class PoisonGrenadeProvider extends ActivateProvider<PoisonGrenade> {
 
 class TrapProvider extends OneTimeActivateProvider<Trap> {
 	run(data: DPSProviderOptions): void {
-		this.dps += this.activate.totalDamage;
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, {
+			armorPiercing: false,
+			maxDamage: this.activate.totalDamage,
+			minDamage: this.activate.totalDamage
+		}, NormalStats, data.def);
+		data.enemyEffects.addEffect(this.activate.condEffect, this.activate.condDuration)
 	}
 }
 
@@ -693,13 +776,8 @@ class StatBoostProvider extends OneTimeActivateProvider<StatBoostSelf> {
 
 class ConditionEffectProvider extends OneTimeActivateProvider<ConditionEffectSelf> {
 	run(data: DPSProviderOptions): void {
-		data.timedBuffs.addBuff(this.activate.effect.toString(), {
-			onApply: () => data.statusEffects.push(this.activate.effect),
-			onRemove: () => {
-				const index = data.statusEffects.indexOf(this.activate.effect);
-				if (index !== -1) delete data.statusEffects[index]
-			}
-		}, this.activate.duration)
+		const stats = getStats(data.statsMap);
+		data.playerEffects.addEffect(this.activate.effect, this.activate.getDuration(stats.wis));
 	}
 }
 
@@ -727,6 +805,31 @@ class BleedEffectProvider implements DPSProvider {
 	}
 }
 
+class LightningProvider extends OneTimeActivateProvider<Lightning> {
+	run(data: DPSProviderOptions): void {
+		const stats = getStats(data.statsMap);
+		const damage = this.activate.getDamage(stats.wis)
+		
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, {
+			armorPiercing: false,
+			minDamage: damage,
+			maxDamage: damage
+		}, NormalStats, data.def);
+	}
+}
+
+class HealNovaProvider extends OneTimeActivateProvider<HealNova> {
+	run(data: DPSProviderOptions): void {
+		if (this.activate.damage === undefined) return;
+
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, {
+			armorPiercing: false,
+			minDamage: this.activate.damage,
+			maxDamage: this.activate.damage
+		}, NormalStats, data.def);
+	}
+}
+
 class ObjectTossProvider extends OneTimeActivateProvider<ObjectToss> {
 	run(data: DPSProviderOptions): void {
 		const provider = ObjectTossProviders[this.activate.objectId];
@@ -745,7 +848,7 @@ class DivinityProvider extends OneTimeActivateProvider<ObjectToss> {
 
 	run(data: DPSProviderOptions): void {
 		const stats = getStats(data.statsMap);
-		this.dps += getAverageDamage(data.statusEffects, DivinityProvider.DATA, stats, data.def);
+		this.dps += getAverageDamage(data.playerEffects, data.enemyEffects, DivinityProvider.DATA, stats, data.def);
 	}
 }
 
@@ -757,7 +860,7 @@ class EscutcheonProvider extends OneTimeActivateProvider<ObjectToss> {
 	}
 
 	run(data: DPSProviderOptions): void {
-		this.dps += getAverageDamage(data.statusEffects, EscutcheonProvider.DATA, NormalStats, data.def);
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, EscutcheonProvider.DATA, NormalStats, data.def);
 	}
 }
 
@@ -769,7 +872,7 @@ class SporousSprayProvider extends TimedActivateProvider<ObjectToss> {
 	}
 
 	run(data: DPSProviderOptions): void {
-		this.dps += getAverageDamage([], SporousSprayProvider.DATA, NormalStats, data.def);
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, SporousSprayProvider.DATA, NormalStats, data.def);
 	}
 
 	getDuration(): number {
@@ -789,7 +892,7 @@ class GenesisSpellProvider extends TimedActivateProvider<ObjectToss> {
 	}
 
 	run(data: DPSProviderOptions): void {
-		this.dps += getAverageDamage([], GenesisSpellProvider.DATA, NormalStats, data.def);
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, GenesisSpellProvider.DATA, NormalStats, data.def);
 	}
 
 	getDuration(): number {
@@ -810,7 +913,7 @@ class ChaoticScriptureProvider extends OneTimeActivateProvider<ObjectToss> {
 	}
 
 	run(data: DPSProviderOptions): void {
-		this.dps += getAverageDamage([], ChaoticScriptureProvider.DATA, NormalStats, data.def);
+		this.dps += getAverageDamage(EmptyEffects, data.enemyEffects, ChaoticScriptureProvider.DATA, NormalStats, data.def);
 	}
 }
 
@@ -837,7 +940,9 @@ const ActivateProviders: {[key: string]: new (item: PossibleItem, equip: Equipme
 	"Trap": TrapProvider,
 	"ConditionEffectSelf": ConditionEffectProvider,
 	"ConditionEffectAura": ConditionEffectProvider,
-	"ObjectToss": ObjectTossProvider
+	"ObjectToss": ObjectTossProvider,
+	"Lightning": LightningProvider,
+	"HealNova": HealNovaProvider
 }
 
 export function isActivateCalculated(key: string) {

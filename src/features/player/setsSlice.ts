@@ -58,7 +58,8 @@ function getInitialState(): PlayerState[] {
 		if (equipment === undefined) continue;
 
 		state.equipment[i] = {
-			id: equipment.id
+			id: equipment.id,
+			accuracy: 0
 		};
 	}
 
@@ -105,7 +106,8 @@ const playerSlice = createSlice({
 				if (equipment === undefined) continue;
 
 				state[action.payload[0]].equipment[i] = {
-					id: equipment.id
+					id: equipment.id,
+					accuracy: i === 0 ? 100 : 0
 				};
 			}
 
@@ -151,7 +153,7 @@ const playerSlice = createSlice({
 			const item = set.equipment[action.payload[1]];
 			const accuracy = action.payload[2];
 
-			if (item !== undefined) item.accuracy = accuracy === 100 ? undefined : accuracy;
+			if (item !== undefined) item.accuracy = accuracy;
 		}
 	}
 })

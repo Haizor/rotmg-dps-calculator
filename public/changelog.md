@@ -1,3 +1,11 @@
+# v0.3.1
+* Fixed status effects applying inconsistently.
+* Added support for scepters
+* Turned ability DPS off by default.
+
+Something to note with this update is status effects are applied properly when using abilities now, even if you don't have the status effect ticked for the set. This means if you have ability DPS enabled, you'll get berserk from helmets, damaging from seals, etc. 
+
+
 # v0.3.0
 * Added support for the following items:
 	* Divinity

@@ -1,10 +1,13 @@
 import React, { ReactNode } from "react";
 import ReactDOM from "react-dom";
-import { Item } from "@haizor/rotmg-utils";
+import { Item, Stats } from "@haizor/rotmg-utils";
 import Tooltip from "./Tooltip";
 
 type Props = {
 	item: Item
+	player?: {
+		stats: Stats
+	}
 	children: ReactNode
 }
 
@@ -35,7 +38,7 @@ export default class TooltipProvider extends React.Component<Props, State> {
 	getTooltip(): React.ReactNode {
 		if (!this.state.hovering) return null;
 		return ReactDOM.createPortal((
-			<Tooltip item={this.props.item} x={this.state.x} y={this.state.y}/>
+			<Tooltip item={this.props.item} x={this.state.x} y={this.state.y} player={this.props.player}/>
 		), document.getElementById("tooltip") as Element)
 	}
 
