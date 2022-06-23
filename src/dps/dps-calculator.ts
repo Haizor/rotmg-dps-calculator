@@ -233,7 +233,7 @@ function getAverageDamage(playerEffects: StatusEffectManager, enemyEffects: Stat
 		}
 		return damage
 	} else {
-		for (let i = data.minDamage; i <= data.maxDamage; i++) {
+		for (let i = data.minDamage; i < data.maxDamage - 1; i++) {
 			let base = stats.getAttackDamage(i);
 			if (!weakened && playerEffects.hasEffect(StatusEffectType.Damaging)) {
 				base *= 1.25;
@@ -488,11 +488,14 @@ class WeaponDPSProvider implements DPSProvider {
 		
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
+		//Old calc damage for shortbow: 14 - main, 3 - side
+		
 		while (this.attackCountBuffer >= 1) {
 			processProcs("onShootProcs", procDatas, this.state.equipment, this.equipment, options);
 			for (let attack of attacks) {
 				const projectile = weapon.projectiles[attack.projectileId];
 				const damage = getAverageDamage(playerEffects, enemyEffects, projectile, stats, def);
+
 				this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
 				if (projectile.conditionEffect !== undefined) {
 					playerEffects.addEffect(projectile.conditionEffect.type, projectile.conditionEffect.duration);

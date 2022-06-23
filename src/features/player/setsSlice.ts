@@ -114,19 +114,10 @@ const playerSlice = createSlice({
 			state[action.payload[0]].stats = fullToBasicStats(player.maxStats);
 		},
 		setEquipment: (state: PlayerState[], action: PayloadAction<DoubleIndexed<PossibleItem>>) => {
-			state[action.payload[0]].equipment[action.payload[1]] = action.payload[2];
-		},
-		setWeapon: (state: PlayerState[], action: PayloadAction<Indexed<PossibleItem>>) => {
-			state[action.payload[0]].equipment[0] = action.payload[1];
-		},
-		setAbility: (state: PlayerState[], action: PayloadAction<Indexed<PossibleItem>>) => {
-			state[action.payload[0]].equipment[0] = action.payload[1];
-		},
-		setArmor: (state: PlayerState[], action: PayloadAction<Indexed<PossibleItem>>) => {
-			state[action.payload[0]].equipment[0] = action.payload[1];
-		},
-		setRing: (state: PlayerState[], action: PayloadAction<Indexed<PossibleItem>>) => {
-			state[action.payload[0]].equipment[0] = action.payload[1];
+			let equip = state[action.payload[0]].equipment[action.payload[1]];
+
+			equip = Object.assign(equip ?? {}, action.payload[2]);
+			state[action.payload[0]].equipment[action.payload[1]] = equip;
 		},
 		setColor: (state: PlayerState[], action: PayloadAction<Indexed<string>>) => {
 			state[action.payload[0]].color = action.payload[1];
@@ -177,10 +168,6 @@ export const {
 	addSet, 
 	setPlayer, 
 	setEquipment, 
-	setWeapon, 
-	setAbility, 
-	setArmor, 
-	setRing, 
 	setStats, 
 	removeSet, 
 	setColor, 
