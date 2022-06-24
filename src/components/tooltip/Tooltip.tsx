@@ -125,7 +125,7 @@ export default class Tooltip extends React.Component<Props, State> {
 							{this.renderProperty(undefined, `Bullet ${index + 1} (${proj.minDamage}-${proj.maxDamage}):`)}
 							{attack.numProjectiles > 1 && this.renderProperty("Shots", attack.numProjectiles)}
 							{this.renderProperty("Range", proj.getRange())}
-							{attack.rateOfFire !== 1 && this.renderProperty("Rate of Fire", `${(attack.rateOfFire * 100)}%`)}
+							{attack.rateOfFire !== 1 && this.renderProperty("Rate of Fire", `${Math.floor(attack.rateOfFire * 100)}%`)}
 							{proj.boomerang && this.renderProperty(undefined, "Shots boomerang")}
 							{proj.multiHit && this.renderProperty(undefined, "Shots hit multple targets")}
 							{proj.passesCover && this.renderProperty(undefined, "Shots pass through obstacles")}

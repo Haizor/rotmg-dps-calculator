@@ -1,0 +1,39 @@
+{
+	"name": "main",
+	"default": true,
+	"containers": [
+		{
+			"loader": "rotmg-loader",
+			"type": "players",
+			"sourceLoader": "url-to-text",
+			"settings": {
+				"readOnly": true,
+				"type": "object"
+			},
+			"sources": [
+				"https://www.haizor.net/rotmg/assets/production/xml/players.xml"
+			]
+		},
+		{
+			"loader": "rotmg-loader",
+			"type": "equipment",
+			"sourceLoader": "url-to-text",
+			"settings": {
+				"readOnly": true,
+				"type": "object"
+			},
+			"sources": [
+				"https://www.haizor.net/rotmg/assets/production/xml/equip.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/equipmentsets.xml"
+			]
+		},
+		{
+			"type": "sprites",
+			"loader": "sprite-loader",
+			"sourceLoader": "url-to-text",
+			"sources": [
+				"https://www.haizor.net/rotmg/assets/production/atlases/spritesheet.json"
+			]
+		}
+	]
+}

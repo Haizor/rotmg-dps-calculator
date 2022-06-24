@@ -9,44 +9,12 @@ export const AssetTypes = {
 	Equipment: "equipment"
 }
 
-const config: AssetManagerConfig = {
-	name: "main",
-	default: true,
-	containers: [
-		{
-			loader: "rotmg-loader",
-			type: AssetTypes.Players,
-			sourceLoader: "url-to-text",
-			settings: {
-				readOnly: true,
-				type: "object"
-			},
-			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/players.xml"
-			]
-		},
-		{
-			loader: "rotmg-loader",
-			type: AssetTypes.Equipment,
-			sourceLoader: "url-to-text",
-			settings: {
-				readOnly: true,
-				type: "object"
-			},
-			sources: [
-				"https://www.haizor.net/rotmg/assets/production/xml/equip.xml",
-				"https://www.haizor.net/rotmg/assets/production/xml/equipmentsets.xml"
-			]
-		},
-		{
-			type: "sprites",
-			loader: "sprite-loader",
-			sourceLoader: "url-to-text",
-			sources: [
-				"https://www.haizor.net/rotmg/assets/production/atlases/spritesheet.json"
-			]
-		}
-	]
+async function getConfig() {
+	const params = new URLSearchParams(window.location.search);
+	const configUrl = params.get("config") ?? "./production.json";
+	const json = await (await fetch(configUrl)).json();
+	console.log(json)
+	return json;
 }
 
 export const Manager = new AssetManager();
@@ -58,7 +26,11 @@ Sprite.setAssetManager(Manager);
 
 const db = new DBHandler(Manager);
 
-export const ManagerLoading = Promise.all([Manager.load(config),  db.load()]);
+async function load() {
+	await Manager.load(await getConfig());
+}
+
+export const ManagerLoading = Promise.all([load(), db.load()]);
 
 export type IDSelector = (state: RootState) => number | string | undefined;
 

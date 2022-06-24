@@ -1,4 +1,4 @@
-import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, HealNova, Lightning, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Trap, VampireBlast } from "@haizor/rotmg-utils";
+import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, HealNova, Lightning, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Subattack, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, Item, PlayerState, PossibleItem } from "../features/player/setsSlice";
 import { basicToFullStats } from "../util";
@@ -459,12 +459,15 @@ type DPSProviderOptions = {
 	procDatas: ProcDatas;
 }
 
+type WeaponAttack = Equipment | Subattack;
+
 class WeaponDPSProvider implements DPSProvider {
 	state: PlayerState;
 	dps: number = 0;
 	equipment: (Equipment | undefined)[];
-	attackCountBuffer: number = 0;
+
 	attackCount: number = 0;
+	attackCountsBuffer: number[] = [];
 
 	constructor(state: PlayerState) {
 		this.state = state;
@@ -481,45 +484,52 @@ class WeaponDPSProvider implements DPSProvider {
 		const { elapsed, def, statsMap, procDatas, addProvider, playerEffects, enemyEffects } = options;
 
 		const stats = getStats(statsMap);
-		let attacksPerSecond = this.getAttacksPerSecond(weapon, stats, playerEffects);
-		
-		if (!options.playerEffects.hasEffect(StatusEffectType.Stunned))
-			this.attackCountBuffer += elapsed * attacksPerSecond;
 		
 		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
 
-		//Old calc damage for shortbow: 14 - main, 3 - side
-		
-		while (this.attackCountBuffer >= 1) {
-			processProcs("onShootProcs", procDatas, this.state.equipment, this.equipment, options);
-			for (let attack of attacks) {
-				const projectile = weapon.projectiles[attack.projectileId];
-				const damage = getAverageDamage(playerEffects, enemyEffects, projectile, stats, def);
+		if (!options.playerEffects.hasEffect(StatusEffectType.Stunned))
+			for (const i in attacks) {
+				let attack = attacks[i];
+				let aps = this.getAttacksPerSecond(attack, stats, playerEffects);
+				if (this.attackCountsBuffer[i] === undefined) this.attackCountsBuffer[i] = 0;
+				this.attackCountsBuffer[i] += elapsed * aps;
 
-				this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
-				if (projectile.conditionEffect !== undefined) {
-					playerEffects.addEffect(projectile.conditionEffect.type, projectile.conditionEffect.duration);
-				}
+				while (this.attackCountsBuffer[i] >= 1) {
+					processProcs("onShootProcs", procDatas, this.state.equipment, this.equipment, options);
 
-				if (projectile.conditionEffect !== undefined && projectile.conditionEffect.type === StatusEffectType.Bleeding) {
-					addProvider(new BleedEffectProvider(this.state.equipment[0] as Item, 3, 100))
+					const projectile = weapon.projectiles[attack.projectileId];
+					const damage = getAverageDamage(playerEffects, enemyEffects, projectile, stats, def);
+	
+					this.dps += damage * (attack.numProjectiles ?? weapon.numProjectiles ?? 1) * (this.state.equipment[0]?.accuracy ?? 100) / 100;
+					if (projectile.conditionEffect !== undefined) {
+						playerEffects.addEffect(projectile.conditionEffect.type, projectile.conditionEffect.duration);
+					}
+	
+					if (projectile.conditionEffect !== undefined && projectile.conditionEffect.type === StatusEffectType.Bleeding) {
+						addProvider(new BleedEffectProvider(this.state.equipment[0] as Item, 3, 100))
+					}
+					
+					this.attackCountsBuffer[i]--;
+					this.attackCount++;
 				}
 			}
-			this.attackCountBuffer--;
-			this.attackCount++;
-		}
+
+		//Old calc damage for shortbow: 14 - main, 3 - side
+		
+		
 
 		return true;
 	}
 
-	getAttacksPerSecond(weapon: Equipment, stats: Stats, effects: StatusEffectManager): number {
+	getAttacksPerSecond(weapon: WeaponAttack, stats: Stats, effects: StatusEffectManager): number {
 		let aps = 0;
 	
 		aps = stats.getAttacksPerSecond() * (effects.hasEffect(StatusEffectType.Berserk) ? 1.25 : 1);
 		if (effects.hasEffect(StatusEffectType.Dazed)) aps = 1.5;
 		aps *= weapon.rateOfFire;
-		if (weapon.burstCount === undefined || weapon.burstDelay === undefined || weapon.burstMinDelay === undefined) return aps;
 
+		if (weapon.burstCount === undefined || weapon.burstDelay === undefined || weapon.burstMinDelay === undefined) return aps;
+		
 		const currBurstDelay = Math.min(Math.max(weapon.burstDelay - ((weapon.burstDelay - weapon.burstMinDelay) / 100 * stats.dex), weapon.burstMinDelay), weapon.burstDelay);
 
 		return (weapon.burstCount / currBurstDelay)
