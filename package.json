@@ -4,7 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@haizor/rotmg-utils": "^1.2.3",
+    "@haizor/rotmg-utils": "^1.2.4",
     "@react-spring/web": "^9.4.5",
     "@reduxjs/toolkit": "^1.8.2",
     "@testing-library/jest-dom": "^5.16.4",

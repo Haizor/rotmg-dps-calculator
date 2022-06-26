@@ -490,7 +490,12 @@ class WeaponDPSProvider implements DPSProvider {
 
 		const stats = getStats(statsMap);
 		
-		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks;
+		const attacks = weapon.subAttacks.length <= 0 ? [ {...weapon, projectileId: 0 } ] : weapon.subAttacks.map((attack => {
+			if (weapon.rateOfFire !== 1 && attack.rateOfFire === 1) {
+				return {...attack, rateOfFire: weapon.rateOfFire};
+			}
+			return attack;
+		}));
 
 		if (!options.playerEffects.hasEffect(StatusEffectType.Stunned))
 			for (const i in attacks) {

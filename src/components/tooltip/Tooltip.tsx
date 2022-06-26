@@ -366,6 +366,11 @@ export default class Tooltip extends React.Component<Props, State> {
 							{this.getItemData().projectiles[0]?.armorPiercing && this.renderProperty(undefined, "Ignores defense of target")}
 						</>
 					}
+					{this.getItemData().rateOfFire !== 1 && this.getItemData().subAttacks.length > 0 && 
+						<>
+							{this.renderProperty("Rate of Fire", this.getItemData().getROF())}
+						</>
+					}
 
 					{this.renderStats(this.getItemData().stats, true)}
 					{this.getItemData().mpCost !== 0 && this.renderProperty("MP Cost", this.getItemData().mpCost)}
