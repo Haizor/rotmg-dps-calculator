@@ -13,6 +13,7 @@ import styles from "./DefenseGraph.module.css";
 import SpriteComponent from "./SpriteComponent";
 import { getTextureForEffect } from "../util";
 import { StatusEffectType } from "@haizor/rotmg-utils";
+import { SettingsState } from "../features/settingsSlice";
 
 Chart.register(...registerables);
 
@@ -46,15 +47,15 @@ function getInitialData(sets: PlayerState[]): Data {
 	return data;
 }
 
-function updateData(sets: PlayerState[], data: Data) {
+function updateData(sets: PlayerState[], data: Data, settings: SettingsState, force: boolean = false) {
 	sets.forEach((state, index) => {
 		if (data.datasets[index] === undefined) {
 			data.datasets[index] = {data: [], label: state.id + "", borderColor: state.color } as any;
 		}
 		const hash = objectHash(state, hashOptions);
 
-		if (hash !== (data.datasets[index] as any).hash) {
-			const dps = new DPSCalculator(state);
+		if (force || hash !== (data.datasets[index] as any).hash) {
+			const dps = new DPSCalculator(state, settings);
 			const dpsData = dps.getDPS();
 			data.datasets[index].data = dpsData.map((data) => data.total);
 			(data.datasets[index] as Dataset).categories = dpsData.map((data) => data.categorized);
@@ -66,31 +67,6 @@ function updateData(sets: PlayerState[], data: Data) {
 
 	if (data.datasets.length > sets.length) {
 		data.datasets.splice(sets.length);
-	}
-}
-
-function getDataFromSets(sets: PlayerState[]): Data {
-	const datasets: ChartDataset<"line", number[]>[] = [];
-	const labels: number[] = [];
-
-	for (let i = 0; i <= defenseRange; i++) {
-		labels.push(i);
-	}
-
-	sets.forEach((state) => {
-		const dps = new DPSCalculator(state);
-
-		datasets.push({
-			id: state.id,
-			label: state.id,
-			data: dps.getDPS(),
-			borderColor: state.color
-		} as any);
-	})
-
-	return {
-		datasets,
-		labels
 	}
 }
 
@@ -109,11 +85,7 @@ function DefenseGraph() {
 	const data = useRef<Data>(getInitialData(sets));
 	const tooltip = useRef<Tooltip>(null);
 
-	// const [ tooltipData, setTooltipData ] = useState<TooltipData[] | undefined>(undefined);
-
-	// const tooltip = tooltipData === undefined ? null : createPortal((
-	// 	<>A</>
-	// ), document.getElementById("tooltip") as Element);
+	const settings = useAppSelector(state => state.settings);
 
 	const external = (o: any) => {
 		tooltip.current?.updateTooltip(o as any)
@@ -158,12 +130,20 @@ function DefenseGraph() {
 
 
 	useEffect(() => {
-		updateData(sets, data.current);
+		updateData(sets, data.current, settings);
 		if (chart.current !== null) {
 			chart.current.data = data.current;
 			chart.current.update();
 		}
-	}, [sets])
+	}, [ sets ])
+
+	useEffect(() => {
+		updateData(sets, data.current, settings, true);
+		if (chart.current !== null) {
+			chart.current.data = data.current;
+			chart.current.update();
+		}
+	}, [ settings ])
 
 	return (
 		<div style={{flex: "1 0 0", minWidth: "0", padding: "16px", overflow: "hidden"}}>

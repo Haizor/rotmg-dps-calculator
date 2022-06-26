@@ -56,7 +56,7 @@ function StatField({stat}: {stat: keyof(BasicStats)}) {
 	const dispatch = useAppDispatch();
 	const stats = useAppSelector((state) => state.sets[index].stats);
 
-	return <input style={{borderColor: `var(--${stat})`}} className={styles.numberInput} type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: parseInt(e.target.value)}]))}/>
+	return <input style={{borderColor: `var(--${stat})`}} className="numberInput" type="number" value={stats[stat]} onChange={(e) => dispatch(setStats([index, {...stats, [stat]: parseInt(e.target.value)}]))}/>
 }
 
 function PetMagicHeal() {
@@ -73,7 +73,7 @@ function PetMagicHeal() {
 	return (
 		<>
 			<SpriteComponent size={16} texture={getTextureForEffect(StatusEffectType["Pet Stasis"])} />
-			<input min={0} max={100} style={{borderColor: `var(--magic)`}}className={styles.numberInput} type="number" value={petMagicHeal} onChange={onChange}/>
+			<input min={0} max={100} style={{borderColor: `var(--magic)`}} className="numberInput" type="number" value={petMagicHeal} onChange={onChange}/>
 		</>
 	)
 }

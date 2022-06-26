@@ -116,7 +116,12 @@ const playerSlice = createSlice({
 		setEquipment: (state: PlayerState[], action: PayloadAction<DoubleIndexed<PossibleItem>>) => {
 			let equip = state[action.payload[0]].equipment[action.payload[1]];
 
-			equip = Object.assign(equip ?? {}, action.payload[2]);
+			if (action.payload[2] !== undefined) {
+				equip = Object.assign(equip ?? {}, action.payload[2]);
+			} else {
+				equip = undefined;
+			}
+
 			state[action.payload[0]].equipment[action.payload[1]] = equip;
 		},
 		setColor: (state: PlayerState[], action: PayloadAction<Indexed<string>>) => {

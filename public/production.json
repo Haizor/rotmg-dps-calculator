@@ -24,6 +24,7 @@
 			},
 			"sources": [
 				"https://www.haizor.net/rotmg/assets/production/xml/equip.xml",
+				"https://www.haizor.net/rotmg/assets/production/xml/spiderDenObjects.xml",
 				"https://www.haizor.net/rotmg/assets/production/xml/equipmentsets.xml"
 			]
 		},

@@ -1,3 +1,9 @@
+# v0.3.2
+* Added settings menu for changing simulation parameters
+* Fixed not being able to unequip items
+
+Side note, if you want to see how the new weapon subtypes match up to the current ones, you can find them [here](https://www.haizor.net/rotmg/dps-calculator/?config=testing.json).
+
 # v0.3.1
 * Fixed status effects applying inconsistently.
 * Added support for scepters

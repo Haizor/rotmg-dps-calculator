@@ -1,9 +1,11 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import setsSlice from '../features/player/setsSlice';
+import settingsSlice from '../features/settingsSlice'
 
 export const store = configureStore({
   reducer: {
     sets: setsSlice,
+    settings: settingsSlice
   },
 });
 

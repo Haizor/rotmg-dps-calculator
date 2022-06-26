@@ -20,6 +20,10 @@ export function TopBar() {
 			<img className={`${styles.icon} ${styles.invert}`} src="help_icon.svg" alt="FAQ" />
 		</div>
 
+		<div onClick={() => navigate("settings")}>
+			<img className={`${styles.icon} ${styles.invert}`} src="settings_icon.svg" alt="Settings" />
+		</div>
+
 		<div className={styles.title}>
 			Haizor.net
 		</div>

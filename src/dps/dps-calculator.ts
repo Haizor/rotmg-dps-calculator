@@ -1,6 +1,7 @@
 import { AbilityUseDiscount, Activate, BulletCreate, BulletNova, ConditionEffect, ConditionEffectSelf, Equipment, EquipmentSet, HealNova, Lightning, ObjectToss, PoisonGrenade, Proc, Projectile, Shoot, StatBoostSelf, Stats, StatusEffectType, Subattack, Trap, VampireBlast } from "@haizor/rotmg-utils";
 import { AssetTypes, Manager } from "../asset";
 import { getEquipmentFromState, getPlayerFromState, hasStatusEffect, Item, PlayerState, PossibleItem } from "../features/player/setsSlice";
+import { SettingsState } from "../features/settingsSlice";
 import { basicToFullStats } from "../util";
 
 type StatsMap = {
@@ -330,8 +331,12 @@ export default class DPSCalculator {
 	minDef: number = 0;
 	maxDef: number = 100;
 
-	constructor(state: PlayerState) {
+	constructor(state: PlayerState, settings: SettingsState) {
 		this.state = state;
+
+		this.simulationCount = settings.simulationCount;
+		this.simulationTime = settings.simulationTime;
+		this.simulationStep = settings.simulationStep;
 	}
 
 	getDPS(): DPSData[] {
@@ -340,7 +345,7 @@ export default class DPSCalculator {
 		if (player === undefined) return [];
 		let dps = [];
 
-		for (let def = this.minDef; def <= this.maxDef; def += (this.maxDef - this.minDef) / this.simulationCount) {
+		for (let def = this.minDef; def <= this.maxDef; def += Math.floor((this.maxDef - this.minDef) / this.simulationCount)) {
 			dps[def] = (this.simulate(def));
 		}
 
