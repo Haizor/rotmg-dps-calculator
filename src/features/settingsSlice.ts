@@ -22,7 +22,7 @@ const settingsSlice = createSlice({
 		},
 		setSimulationStep: (state: SettingsState, action: PayloadAction<number>) => {
 			state.simulationStep = action.payload;
-		},
+		}
 	}
 })
 

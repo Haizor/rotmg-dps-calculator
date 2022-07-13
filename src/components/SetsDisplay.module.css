@@ -25,3 +25,19 @@
 	font-weight: bolder;
 	color: #fff;
 }
+
+.statsDisplay {
+	display: grid;
+	grid-template-columns: auto auto auto auto;
+
+	background-color: black;
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	margin: 8px;
+}
+
+.statsDisplay > * {
+	padding: 4px;
+	text-align: center;
+}
